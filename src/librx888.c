@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/18 15:56:15 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/19 19:17:49 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 #include <sys/types.h>
 #include "librx888.h"
 
@@ -29,6 +30,7 @@ struct rx888_dev {
     struct libusb_device_handle *dev_handle;
     struct libusb_transfer **transfer;
     rx888_read_async_cb_t cb;
+    uint32_t sample_rate;
     
 };
 
@@ -42,6 +44,44 @@ static rx888_t known_devices[] = {
     { 0x04b4, 0x00f1, "Cypress Semiconductor Corp. RX888"},
 
 };
+
+int rx888_get_usb_strings(rx888_dev_t *dev, char *manufact, char *product,
+			    char *serial)
+{
+	if (!dev || !dev->dev_handle)
+		return -1;
+
+	libusb_device *device = libusb_get_device(dev->dev_handle);
+
+	struct libusb_device_descriptor dd;
+	int r = libusb_get_device_descriptor(device, &dd);
+	if (r < 0)
+		return -1;
+
+	const int buf_max = 256;
+	if (manufact) {
+		memset(manufact, 0, buf_max);
+		libusb_get_string_descriptor_ascii(dev->dev_handle, dd.iManufacturer,
+						   (unsigned char *)manufact,
+						   buf_max);
+	}
+
+	if (product) {
+		memset(product, 0, buf_max);
+		libusb_get_string_descriptor_ascii(dev->dev_handle, dd.iProduct,
+						   (unsigned char *)product,
+						   buf_max);
+	}
+
+	if (serial) {
+		memset(serial, 0, buf_max);
+		libusb_get_string_descriptor_ascii(dev->dev_handle, dd.iSerialNumber,
+						   (unsigned char *)serial,
+						   buf_max);
+	}
+
+	return 0;
+}
 
 static rx888_t *find_known_device(uint16_t vid, uint16_t pid)
 {
@@ -82,6 +122,86 @@ uint32_t rtlsdr_get_device_count(void)
 	libusb_exit(ctx);
 
 	return device_count;
+}
+
+const char *rx888_get_device_name(uint32_t index)
+{
+	libusb_context *ctx;
+	int r = libusb_init(&ctx);
+	if(r < 0)
+		return "";
+
+	libusb_device **list;
+	ssize_t cnt = libusb_get_device_list(ctx, &list);
+
+	struct libusb_device_descriptor dd;
+	uint32_t device_count = 0;
+	rx888_t *device = NULL;
+	for (int i = 0; i < cnt; i++) {
+		libusb_get_device_descriptor(list[i], &dd);
+
+		device = find_known_device(dd.idVendor, dd.idProduct);
+
+		if (device) {
+			device_count++;
+
+			if (index == device_count - 1)
+				break;
+		}
+	}
+
+	libusb_free_device_list(list, 1);
+
+	libusb_exit(ctx);
+
+	if (device)
+		return device->name;
+	else
+		return "";
+}
+
+int rx888_get_device_usb_strings(uint32_t index, char *manufact,
+				   char *product, char *serial)
+{
+	libusb_context *ctx;
+	int r = libusb_init(&ctx);
+	if(r < 0)
+		return r;
+
+	libusb_device **list;
+	ssize_t cnt = libusb_get_device_list(ctx, &list);
+
+	uint32_t device_count = 0;
+	rx888_dev_t devt;
+	rx888_t *device = NULL;
+	struct libusb_device_descriptor dd;
+	for (int i = 0; i < cnt; i++) {
+		libusb_get_device_descriptor(list[i], &dd);
+
+		device = find_known_device(dd.idVendor, dd.idProduct);
+
+		if (device) {
+			device_count++;
+
+			if (index == device_count - 1) {
+				r = libusb_open(list[i], &devt.dev_handle);
+				if (!r) {
+					r = rx888_get_usb_strings(&devt,
+								   manufact,
+								   product,
+								   serial);
+					libusb_close(devt.dev_handle);
+				}
+				break;
+			}
+		}
+	}
+
+	libusb_free_device_list(list, 1);
+
+	libusb_exit(ctx);
+
+	return r;
 }
 
 int rx888_open(rx888_dev_t **out_dev, uint32_t index)

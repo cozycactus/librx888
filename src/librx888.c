@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/20 21:22:38 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/20 21:45:30 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,8 +33,9 @@ struct rx888_dev {
     libusb_context *ctx;
     struct libusb_device_handle *dev_handle;
 	uint32_t xfer_buf_num;
-	
+	uint32_t xfer_buf_len;
     struct libusb_transfer **xfer;
+	unsigned char **xfer_buf;
     rx888_read_async_cb_t cb;
 	void *cb_ctx;
 	enum rx888_async_status async_status;
@@ -56,8 +57,6 @@ static rx888_t known_devices[] = {
     { 0x04b4, 0x00f1, "Cypress Semiconductor Corp. RX888"},
 
 };
-
-#define BULK_TIMEOUT	0
 
 uint32_t rx888_get_sample_rate(rx888_dev_t *dev)
 {
@@ -384,7 +383,7 @@ int rx888_read_sync(rx888_dev_t *dev, void *buf, int len, int *n_read)
 		return -1;
 
 	return libusb_bulk_transfer(dev->dev_handle, 0x81,
-			 buf, len, n_read, BULK_TIMEOUT);
+			 buf, len, n_read, 0);
 }
 
 static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
@@ -415,7 +414,37 @@ static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
 	}
 }
 
+static int _rx888_alloc_async_buffers(rx888_dev_t *dev)
+{
+	unsigned int i;
 
+	if (!dev)
+		return -1;
+
+	if (!dev->xfer) {
+		dev->xfer = malloc(dev->xfer_buf_num *
+				   sizeof(struct libusb_transfer *));
+
+		for(i = 0; i < dev->xfer_buf_num; ++i)
+			dev->xfer[i] = libusb_alloc_transfer(0);
+	}
+
+	if (dev->xfer_buf)
+		return -2;
+
+	dev->xfer_buf = malloc(dev->xfer_buf_num * sizeof(unsigned char *));
+	memset(dev->xfer_buf, 0, dev->xfer_buf_num * sizeof(unsigned char *));
+
+	
+	for (i = 0; i < dev->xfer_buf_num; ++i) {
+		dev->xfer_buf[i] = malloc(dev->xfer_buf_len);
+		if (!dev->xfer_buf[i])
+			return -ENOMEM;
+	}
+	
+
+	return 0;
+}
 
 
 int rx888_cancel_async(rx888_dev_t *dev)

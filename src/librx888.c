@@ -6,19 +6,21 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/20 20:49:32 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/20 21:02:51 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <libusb.h>
-#include <limits.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#ifndef _WIN32
+#include <unistd.h>
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+#include <stdbool.h>
+
+#include <libusb.h>
 #include "librx888.h"
 
 enum rx888_async_status {
@@ -32,6 +34,7 @@ struct rx888_dev {
     struct libusb_device_handle *dev_handle;
     struct libusb_transfer **transfer;
     rx888_read_async_cb_t cb;
+	enum rx888_async_status async_status;
     uint32_t sample_rate;
     /* status */
 	int dev_lost;
@@ -329,5 +332,42 @@ err:
 
 	return r;
     
+}
+
+int rx888_close(rx888_dev_t *dev)
+{
+	if (!dev)
+		return -1;
+
+	if(!dev->dev_lost) {
+		/* block until all async operations have been completed (if any) */
+		while (RX888_INACTIVE != dev->async_status) {
+#ifdef _WIN32
+			Sleep(1);
+#else
+			usleep(1000);
+#endif
+		}
+
+	}
+
+	libusb_release_interface(dev->dev_handle, 0);
+
+#ifdef DETACH_KERNEL_DRIVER
+	if (dev->driver_active) {
+		if (!libusb_attach_kernel_driver(dev->dev_handle, 0))
+			fprintf(stderr, "Reattached kernel driver\n");
+		else
+			fprintf(stderr, "Reattaching kernel driver failed!\n");
+	}
+#endif
+
+	libusb_close(dev->dev_handle);
+
+	libusb_exit(dev->ctx);
+
+	free(dev);
+
+	return 0;
 }
 

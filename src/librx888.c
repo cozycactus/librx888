@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/19 19:17:49 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/20 20:26:52 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,14 @@ static rx888_t known_devices[] = {
     { 0x04b4, 0x00f1, "Cypress Semiconductor Corp. RX888"},
 
 };
+
+uint32_t rx888_get_sample_rate(rx888_dev_t *dev)
+{
+	if (!dev)
+		return 0;
+
+	return dev->sample_rate;
+}
 
 int rx888_get_usb_strings(rx888_dev_t *dev, char *manufact, char *product,
 			    char *serial)
@@ -98,7 +106,7 @@ static rx888_t *find_known_device(uint16_t vid, uint16_t pid)
 	return device;
 }
 
-uint32_t rtlsdr_get_device_count(void)
+uint32_t rx888_get_device_count(void)
 {
 	libusb_context *ctx;
 	int r = libusb_init(&ctx);
@@ -202,6 +210,27 @@ int rx888_get_device_usb_strings(uint32_t index, char *manufact,
 	libusb_exit(ctx);
 
 	return r;
+}
+
+int rx888_get_index_by_serial(const char *serial)
+{
+	if (!serial)
+		return -1;
+
+	int cnt = rx888_get_device_count();
+
+	if (!cnt)
+		return -2;
+    
+    int r;
+	char str[256];
+	for (int i = 0; i < cnt; i++) {
+		r = rx888_get_device_usb_strings(i, NULL, NULL, str);
+		if (!r && !strcmp(serial, str))
+			return i;
+	}
+
+	return -3;
 }
 
 int rx888_open(rx888_dev_t **out_dev, uint32_t index)

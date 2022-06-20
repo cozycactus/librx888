@@ -6,14 +6,16 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/20 20:26:52 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/20 20:49:32 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <libusb.h>
 #include <limits.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
@@ -31,7 +33,9 @@ struct rx888_dev {
     struct libusb_transfer **transfer;
     rx888_read_async_cb_t cb;
     uint32_t sample_rate;
-    
+    /* status */
+	int dev_lost;
+	int driver_active;
 };
 
 typedef struct rx888 {
@@ -270,6 +274,45 @@ int rx888_open(rx888_dev_t **out_dev, uint32_t index)
         r = -1;
         goto err;
     }
+
+	r = libusb_open(device, &dev->dev_handle);
+	if (r < 0) {
+		libusb_free_device_list(list, 1);
+		fprintf(stderr, "usb_open error %d\n", r);
+		if(r == LIBUSB_ERROR_ACCESS)
+			fprintf(stderr, "Please fix the device permissions.\n");
+		goto err;
+	}
+
+	libusb_free_device_list(list, 1);
+
+	if (libusb_kernel_driver_active(dev->dev_handle, 0) == 1) {
+		dev->driver_active = 1;
+
+#ifdef DETACH_KERNEL_DRIVER
+		if (!libusb_detach_kernel_driver(dev->dev_handle, 0)) {
+			fprintf(stderr, "Detached kernel driver\n");
+		} else {
+			fprintf(stderr, "Detaching kernel driver failed!");
+			goto err;
+		}
+#else
+		fprintf(stderr, "\nKernel driver is active, or device is "
+				"claimed by second instance of librx888."
+				"\nIn the first case, please either detach"
+				" or blacklist the kernel module\n"
+				" or enable automatic"
+				" detaching at compile time.\n\n");
+#endif
+	}
+
+	r = libusb_claim_interface(dev->dev_handle, 0);
+	if (r < 0) {
+		fprintf(stderr, "usb_claim_interface error %d\n", r);
+		goto err;
+	}
+
+	dev->dev_lost = false;
 
     *out_dev = dev;
     return 0;

@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/20 21:02:51 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/20 21:22:38 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,13 +32,18 @@ enum rx888_async_status {
 struct rx888_dev {
     libusb_context *ctx;
     struct libusb_device_handle *dev_handle;
-    struct libusb_transfer **transfer;
+	uint32_t xfer_buf_num;
+	
+    struct libusb_transfer **xfer;
     rx888_read_async_cb_t cb;
+	void *cb_ctx;
 	enum rx888_async_status async_status;
+	int async_cancel;
     uint32_t sample_rate;
     /* status */
 	int dev_lost;
 	int driver_active;
+	unsigned int xfer_errors;
 };
 
 typedef struct rx888 {
@@ -51,6 +56,8 @@ static rx888_t known_devices[] = {
     { 0x04b4, 0x00f1, "Cypress Semiconductor Corp. RX888"},
 
 };
+
+#define BULK_TIMEOUT	0
 
 uint32_t rx888_get_sample_rate(rx888_dev_t *dev)
 {
@@ -371,3 +378,64 @@ int rx888_close(rx888_dev_t *dev)
 	return 0;
 }
 
+int rx888_read_sync(rx888_dev_t *dev, void *buf, int len, int *n_read)
+{
+	if (!dev)
+		return -1;
+
+	return libusb_bulk_transfer(dev->dev_handle, 0x81,
+			 buf, len, n_read, BULK_TIMEOUT);
+}
+
+static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
+{
+	rx888_dev_t *dev = (rx888_dev_t *)xfer->user_data;
+
+	if (LIBUSB_TRANSFER_COMPLETED == xfer->status) {
+		if (dev->cb)
+			dev->cb(xfer->buffer, xfer->actual_length, dev->cb_ctx);
+
+		libusb_submit_transfer(xfer); /* resubmit transfer */
+		dev->xfer_errors = 0;
+	} else if (LIBUSB_TRANSFER_CANCELLED != xfer->status) {
+#ifndef _WIN32
+		if (LIBUSB_TRANSFER_ERROR == xfer->status)
+			dev->xfer_errors++;
+
+		if (dev->xfer_errors >= dev->xfer_buf_num ||
+		    LIBUSB_TRANSFER_NO_DEVICE == xfer->status) {
+#endif
+			dev->dev_lost = true;
+			rx888_cancel_async(dev);
+			fprintf(stderr, "cb transfer status: %d, "
+				"canceling...\n", xfer->status);
+#ifndef _WIN32
+		}
+#endif
+	}
+}
+
+
+
+
+int rx888_cancel_async(rx888_dev_t *dev)
+{
+	if (!dev)
+		return -1;
+
+	/* if streaming, try to cancel gracefully */
+	if (RX888_RUNNING == dev->async_status) {
+		dev->async_status = RX888_CANCELING;
+		dev->async_cancel = 1;
+		return 0;
+	}
+
+	/* if called while in pending state, change the state forcefully */
+#if 0
+	if (RTLSDR_INACTIVE != dev->async_status) {
+		dev->async_status = RTLSDR_INACTIVE;
+		return 0;
+	}
+#endif
+	return -2;
+}

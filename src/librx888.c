@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/20 21:45:30 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/21 10:25:44 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -461,8 +461,8 @@ int rx888_cancel_async(rx888_dev_t *dev)
 
 	/* if called while in pending state, change the state forcefully */
 #if 0
-	if (RTLSDR_INACTIVE != dev->async_status) {
-		dev->async_status = RTLSDR_INACTIVE;
+	if (RX888_INACTIVE != dev->async_status) {
+		dev->async_status = RX888_INACTIVE;
 		return 0;
 	}
 #endif

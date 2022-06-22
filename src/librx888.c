@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/21 10:25:44 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/22 15:29:16 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -249,7 +249,7 @@ int rx888_get_index_by_serial(const char *serial)
 int rx888_open(rx888_dev_t **out_dev, uint32_t index)
 {
     rx888_dev_t *dev = calloc(1, sizeof(rx888_dev_t));
-    if (dev == NULL)
+    if (!dev)
         return -ENOMEM;
 
     int r = libusb_init(&dev->ctx);

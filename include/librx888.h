@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:09:44 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/21 10:38:15 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/22 17:15:17 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,9 +21,39 @@ extern "C" {
 
 typedef struct rx888_dev rx888_dev_t;
 
-typedef void(*rx888_read_async_cb_t)(unsigned char *buf, uint32_t len, void *ctx);
+const char* rx888_get_device_name(uint32_t index);
+
+/*!
+ * Get USB device strings.
+ *
+ * NOTE: The string arguments must provide space for up to 256 bytes.
+ *
+ * \param index the device index
+ * \param manufact manufacturer name, may be NULL
+ * \param product product name, may be NULL
+ * \param serial serial number, may be NULL
+ * \return 0 on success
+ */
+int rx888_get_device_usb_strings(uint32_t index,
+					     char *manufact,
+					     char *product,
+					     char *serial);
+
+
+/*!
+ * Get device index by USB serial string descriptor.
+ *
+ * \param serial serial string of the device
+ * \return device index of first device where the name matched
+ * \return -1 if name is NULL
+ * \return -2 if no devices were found at all
+ * \return -3 if devices were found, but none with matching name
+ */
+int rx888_get_index_by_serial(const char *serial);
 
 int rx888_open(rx888_dev_t **dev, uint32_t index);
+
+int rx888_close(rx888_dev_t *dev);
 
 /*!
  * Set the sample rate for the device.
@@ -43,6 +73,30 @@ int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t rate);
  * \return 0 on error, sample rate in Hz otherwise
  */
 uint32_t rx888_get_sample_rate(rx888_dev_t *dev);
+
+int rtlsdr_read_sync(rx888_dev_t *dev, void *buf, int len, int *n_read);
+
+typedef void(*rx888_read_async_cb_t)(unsigned char *buf, uint32_t len, void *ctx);
+
+/*!
+ * Read samples from the device asynchronously. This function will block until
+ * it is being canceled using rtlsdr_cancel_async()
+ *
+ * \param dev the device handle given by rx888_open()
+ * \param cb callback function to return received samples
+ * \param ctx user specific context to pass via the callback function
+ * \param buf_num optional buffer count, buf_num * buf_len = overall buffer size
+ *		  set to 0 for default buffer count (15)
+ * \param buf_len optional buffer length, must be multiple of 512,
+ *		  should be a multiple of 16384 (URB size), set to 0
+ *		  for default buffer length (16 * 32 * 512)
+ * \return 0 on success
+ */
+int rtlsdr_read_async(rx888_dev_t *dev,
+				 rx888_read_async_cb_t cb,
+				 void *ctx,
+				 uint32_t buf_num,
+				 uint32_t buf_len);
 
 /*!
  * Cancel all pending asynchronous operations on the device.

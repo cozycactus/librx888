@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:09:44 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/22 17:15:17 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/23 20:39:47 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@ extern "C" {
 #include <stdint.h>
 
 typedef struct rx888_dev rx888_dev_t;
+
+uint32_t rx888_get_device_count(void);
 
 const char* rx888_get_device_name(uint32_t index);
 
@@ -74,13 +76,13 @@ int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t rate);
  */
 uint32_t rx888_get_sample_rate(rx888_dev_t *dev);
 
-int rtlsdr_read_sync(rx888_dev_t *dev, void *buf, int len, int *n_read);
+int rx888_read_sync(rx888_dev_t *dev, void *buf, int len, int *n_read);
 
 typedef void(*rx888_read_async_cb_t)(unsigned char *buf, uint32_t len, void *ctx);
 
 /*!
  * Read samples from the device asynchronously. This function will block until
- * it is being canceled using rtlsdr_cancel_async()
+ * it is being canceled using rx888_cancel_async()
  *
  * \param dev the device handle given by rx888_open()
  * \param cb callback function to return received samples
@@ -92,7 +94,7 @@ typedef void(*rx888_read_async_cb_t)(unsigned char *buf, uint32_t len, void *ctx
  *		  for default buffer length (16 * 32 * 512)
  * \return 0 on success
  */
-int rtlsdr_read_async(rx888_dev_t *dev,
+int rx888_read_async(rx888_dev_t *dev,
 				 rx888_read_async_cb_t cb,
 				 void *ctx,
 				 uint32_t buf_num,

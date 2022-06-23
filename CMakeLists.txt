@@ -24,7 +24,7 @@ if(PKG_CONFIG_FOUND)
 endif()
 
 if(PKG_CONFIG_FOUND AND NOT LIBUSB_FOUND)
-    message(FATAL_ERROR "LibUSB 1.0 required to compile rtl-sdr")
+    message(FATAL_ERROR "LibUSB 1.0 required to compile rx888")
 endif()
 
 ########################################################################

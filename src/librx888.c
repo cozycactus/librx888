@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/22 15:29:16 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/24 12:00:24 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,6 +57,9 @@ static rx888_t known_devices[] = {
     { 0x04b4, 0x00f1, "Cypress Semiconductor Corp. RX888"},
 
 };
+
+#define DEFAULT_BUF_NUMBER	16
+#define DEFAULT_BUF_LENGTH  (1024 * 16 * 8)
 
 uint32_t rx888_get_sample_rate(rx888_dev_t *dev)
 {
@@ -446,6 +449,150 @@ static int _rx888_alloc_async_buffers(rx888_dev_t *dev)
 	return 0;
 }
 
+static int _rx888_free_async_buffers(rx888_dev_t *dev)
+{
+	unsigned int i;
+
+	if (!dev)
+		return -1;
+
+	if (dev->xfer) {
+		for(i = 0; i < dev->xfer_buf_num; ++i) {
+			if (dev->xfer[i]) {
+				libusb_free_transfer(dev->xfer[i]);
+			}
+		}
+
+		free(dev->xfer);
+		dev->xfer = NULL;
+	}
+
+	if (dev->xfer_buf) {
+		for (i = 0; i < dev->xfer_buf_num; ++i) {
+			if (dev->xfer_buf[i]) {
+				free(dev->xfer_buf[i]);
+			}
+		}
+
+		free(dev->xfer_buf);
+		dev->xfer_buf = NULL;
+	}
+
+	return 0;
+}
+
+
+int rx888_read_async(rx888_dev_t *dev, rx888_read_async_cb_t cb, void *ctx,
+			  uint32_t buf_num, uint32_t buf_len)
+{
+	unsigned int i;
+	int r = 0;
+	struct timeval tv = { 1, 0 };
+	struct timeval zerotv = { 0, 0 };
+	enum rx888_async_status next_status = RX888_INACTIVE;
+
+	if (!dev)
+		return -1;
+
+	if (RX888_INACTIVE != dev->async_status)
+		return -2;
+
+	dev->async_status = RX888_RUNNING;
+	dev->async_cancel = 0;
+
+	dev->cb = cb;
+	dev->cb_ctx = ctx;
+
+	if (buf_num > 0)
+		dev->xfer_buf_num = buf_num;
+	else
+		dev->xfer_buf_num = DEFAULT_BUF_NUMBER;
+
+	if (buf_len > 0 && buf_len % 512 == 0) /* len must be multiple of 512 */
+		dev->xfer_buf_len = buf_len;
+	else
+		dev->xfer_buf_len = DEFAULT_BUF_LENGTH;
+
+	_rx888_alloc_async_buffers(dev);
+
+	for(i = 0; i < dev->xfer_buf_num; ++i) {
+		libusb_fill_bulk_transfer(dev->xfer[i],
+					  dev->dev_handle,
+					  0x81,
+					  dev->xfer_buf[i],
+					  dev->xfer_buf_len,
+					  _libusb_callback,
+					  (void *)dev,
+					  0);
+
+		r = libusb_submit_transfer(dev->xfer[i]);
+		if (r < 0) {
+			fprintf(stderr, "Failed to submit transfer %i\n"
+					"Please increase your allowed " 
+					"usbfs buffer size with the "
+					"following command:\n"
+					"echo 0 > /sys/module/usbcore"
+					"/parameters/usbfs_memory_mb\n", i);
+			dev->async_status = RX888_CANCELING;
+			break;
+		}
+	}
+
+	while (RX888_INACTIVE != dev->async_status) {
+		r = libusb_handle_events_timeout_completed(dev->ctx, &tv,
+							   &dev->async_cancel);
+		if (r < 0) {
+			/*fprintf(stderr, "handle_events returned: %d\n", r);*/
+			if (r == LIBUSB_ERROR_INTERRUPTED) /* stray signal */
+				continue;
+			break;
+		}
+
+		if (RX888_CANCELING == dev->async_status) {
+			next_status = RX888_INACTIVE;
+
+			if (!dev->xfer)
+				break;
+
+			for(i = 0; i < dev->xfer_buf_num; ++i) {
+				if (!dev->xfer[i])
+					continue;
+
+				if (LIBUSB_TRANSFER_CANCELLED !=
+						dev->xfer[i]->status) {
+					r = libusb_cancel_transfer(dev->xfer[i]);
+					/* handle events after canceling
+					 * to allow transfer status to
+					 * propagate */
+#ifdef _WIN32
+					Sleep(1);
+#endif
+					libusb_handle_events_timeout_completed(dev->ctx,
+									       &zerotv, NULL);
+					if (r < 0)
+						continue;
+
+					next_status = RX888_CANCELING;
+				}
+			}
+
+			if (dev->dev_lost || RX888_INACTIVE == next_status) {
+				/* handle any events that still need to
+				 * be handled before exiting after we
+				 * just cancelled all transfers */
+				libusb_handle_events_timeout_completed(dev->ctx,
+								       &zerotv, NULL);
+				break;
+			}
+		}
+	}
+
+	_rx888_free_async_buffers(dev);
+
+	dev->async_status = next_status;
+
+	return r;
+}
 
 int rx888_cancel_async(rx888_dev_t *dev)
 {

@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/24 12:00:24 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/24 17:31:43 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -485,7 +485,6 @@ static int _rx888_free_async_buffers(rx888_dev_t *dev)
 int rx888_read_async(rx888_dev_t *dev, rx888_read_async_cb_t cb, void *ctx,
 			  uint32_t buf_num, uint32_t buf_len)
 {
-	unsigned int i;
 	int r = 0;
 	struct timeval tv = { 1, 0 };
 	struct timeval zerotv = { 0, 0 };
@@ -498,7 +497,7 @@ int rx888_read_async(rx888_dev_t *dev, rx888_read_async_cb_t cb, void *ctx,
 		return -2;
 
 	dev->async_status = RX888_RUNNING;
-	dev->async_cancel = 0;
+	dev->async_cancel = false;
 
 	dev->cb = cb;
 	dev->cb_ctx = ctx;
@@ -515,7 +514,7 @@ int rx888_read_async(rx888_dev_t *dev, rx888_read_async_cb_t cb, void *ctx,
 
 	_rx888_alloc_async_buffers(dev);
 
-	for(i = 0; i < dev->xfer_buf_num; ++i) {
+	for(int i = 0; i < dev->xfer_buf_num; ++i) {
 		libusb_fill_bulk_transfer(dev->xfer[i],
 					  dev->dev_handle,
 					  0x81,
@@ -554,7 +553,7 @@ int rx888_read_async(rx888_dev_t *dev, rx888_read_async_cb_t cb, void *ctx,
 			if (!dev->xfer)
 				break;
 
-			for(i = 0; i < dev->xfer_buf_num; ++i) {
+			for(int i = 0; i < dev->xfer_buf_num; ++i) {
 				if (!dev->xfer[i])
 					continue;
 
@@ -602,7 +601,7 @@ int rx888_cancel_async(rx888_dev_t *dev)
 	/* if streaming, try to cancel gracefully */
 	if (RX888_RUNNING == dev->async_status) {
 		dev->async_status = RX888_CANCELING;
-		dev->async_cancel = 1;
+		dev->async_cancel = true;
 		return 0;
 	}
 

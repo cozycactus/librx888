@@ -6,7 +6,7 @@
 /*   By: Ruslan Migirov <trapi78@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/06/15 16:10:17 by Ruslan Migi       #+#    #+#             */
-/*   Updated: 2022/06/24 17:31:43 by Ruslan Migi      ###   ########.fr       */
+/*   Updated: 2022/06/27 18:23:01 by Ruslan Migi      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,6 +60,11 @@ static rx888_t known_devices[] = {
 
 #define DEFAULT_BUF_NUMBER	16
 #define DEFAULT_BUF_LENGTH  (1024 * 16 * 8)
+
+int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t rate)
+{
+	
+}
 
 uint32_t rx888_get_sample_rate(rx888_dev_t *dev)
 {

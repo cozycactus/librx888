@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: RX888 Library
+Description: C Utility Library
+Version: @VERSION@
+Cflags: -I${includedir}/
+Libs: -L${libdir} -lrx888
+Libs.private:  -lusb-1.0 @RX888_PC_LIBS@

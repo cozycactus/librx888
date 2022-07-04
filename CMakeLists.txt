@@ -42,3 +42,39 @@ install(FILES
 
 add_subdirectory(include)
 add_subdirectory(src)
+
+########################################################################
+# Create Pkg Config File
+########################################################################
+FOREACH(inc ${LIBUSB_INCLUDEDIR})
+    LIST(APPEND RX888_PC_CFLAGS "-I${inc}")
+ENDFOREACH(inc)
+
+FOREACH(lib ${LIBUSB_LIBRARY_DIRS})
+    LIST(APPEND RX888_PC_LIBS "-L${lib}")
+ENDFOREACH(lib)
+
+# use space-separation format for the pc file
+STRING(REPLACE ";" " " RX888_PC_CFLAGS "${RX888_PC_CFLAGS}")
+STRING(REPLACE ";" " " RX888_PC_LIBS "${RX888_PC_LIBS}")
+
+# unset these vars to avoid hard-coded paths to cross environment
+IF(CMAKE_CROSSCOMPILING)
+    UNSET(RX888_PC_CFLAGS)
+    UNSET(RX888_PC_LIBS)
+ENDIF(CMAKE_CROSSCOMPILING)
+
+set(prefix "${CMAKE_INSTALL_PREFIX}")
+set(exec_prefix \${prefix})
+set(includedir \${prefix}/include)
+set(libdir \${exec_prefix}/lib)
+
+CONFIGURE_FILE(
+    ${CMAKE_CURRENT_SOURCE_DIR}/librx888.pc.in
+    ${CMAKE_CURRENT_BINARY_DIR}/librx888.pc
+@ONLY)
+
+INSTALL(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/librx888.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+)

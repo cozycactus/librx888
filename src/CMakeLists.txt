@@ -11,3 +11,9 @@ target_include_directories(rx888 PUBLIC
   
   )
 
+########################################################################
+# Install built library files & utilities
+########################################################################
+install(TARGETS rx888 
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so/.dylib file
+  )

@@ -17,6 +17,12 @@ enum rx888_async_status {
 	RX888_RUNNING
 };
 
+enum rx888_command {
+	STARTFX3 = 0xAA,
+	STARTADC = 0xB2,
+};
+
+
 struct rx888_dev {
     libusb_context *ctx;
     struct libusb_device_handle *dev_handle;
@@ -49,9 +55,39 @@ static rx888_t known_devices[] = {
 #define DEFAULT_BUF_NUMBER	16
 #define DEFAULT_BUF_LENGTH  (1024 * 16 * 8)
 
-int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t rate)
+static int rx888_send_command(struct libusb_device_handle *dev_handle,
+								 enum rx888_command cmd,uint32_t data)
 {
-	
+  /* Send the control message. */
+  int ret = libusb_control_transfer(
+      dev_handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_OUT, cmd, 0, 0,
+      (unsigned char *)&data, sizeof(data), 0);
+
+  if (ret < 0) {
+    fprintf(stderr, "Could not send command: 0x%X with data: %d. Error : %s.\n",
+            cmd, data, libusb_error_name(ret));
+    return -1;
+  }
+
+  return 0;
+}
+
+int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
+{
+	if (!dev)
+		return -1;
+
+	/* check if the rate is supported by the resampler */
+	if ((samp_rate <= 10000) || (samp_rate > 150000000)) {
+		fprintf(stderr, "Invalid sample rate: %u Hz\n", samp_rate);
+		return -EINVAL;
+	}
+
+	dev->sample_rate = samp_rate;
+
+	rx888_send_command(dev->dev_handle, STARTADC, samp_rate);
+
+	return 0;
 }
 
 uint32_t rx888_get_sample_rate(rx888_dev_t *dev)

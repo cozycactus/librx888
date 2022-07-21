@@ -9,6 +9,8 @@ extern "C" {
 
 typedef struct rx888_dev rx888_dev_t;
 
+
+
 uint32_t rx888_get_device_count(void);
 
 const char* rx888_get_device_name(uint32_t index);

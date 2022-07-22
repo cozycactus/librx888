@@ -54,6 +54,7 @@ static rx888_t known_devices[] = {
 
 #define DEFAULT_BUF_NUMBER	16
 #define DEFAULT_BUF_LENGTH  (1024 * 16 * 8)
+#define CTRL_TIMEOUT 300
 
 static int rx888_send_command(struct libusb_device_handle *dev_handle,
 								 enum rx888_command cmd,uint32_t data)
@@ -61,7 +62,7 @@ static int rx888_send_command(struct libusb_device_handle *dev_handle,
   /* Send the control message. */
   int ret = libusb_control_transfer(
       dev_handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_OUT, cmd, 0, 0,
-      (unsigned char *)&data, sizeof(data), 0);
+      (unsigned char *)&data, sizeof(data), CTRL_TIMEOUT);
 
   if (ret < 0) {
     fprintf(stderr, "Could not send command: 0x%X with data: %d. Error : %s.\n",

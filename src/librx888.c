@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -544,7 +545,7 @@ int rx888_read_async(rx888_dev_t *dev, rx888_read_async_cb_t cb, void *ctx,
 
 	_rx888_alloc_async_buffers(dev);
 
-	for(int i = 0; i < dev->xfer_buf_num; ++i) {
+	for(uint32_t i = 0; i < dev->xfer_buf_num; ++i) {
 		libusb_fill_bulk_transfer(dev->xfer[i],
 					  dev->dev_handle,
 					  0x81,
@@ -583,7 +584,7 @@ int rx888_read_async(rx888_dev_t *dev, rx888_read_async_cb_t cb, void *ctx,
 			if (!dev->xfer)
 				break;
 
-			for(int i = 0; i < dev->xfer_buf_num; ++i) {
+			for(uint32_t i = 0; i < dev->xfer_buf_num; ++i) {
 				if (!dev->xfer[i])
 					continue;
 

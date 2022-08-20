@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200112L
+
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
@@ -203,9 +205,9 @@ static void underrun_test(unsigned char *buf, uint32_t len, int mute)
 static int ppm_gettime(struct time_generic *tg)
 {
 	int rv = ENOSYS;
-	//struct timespec ts;
 
 #ifdef __unix__
+	struct timespec ts;
 	rv = clock_gettime(CLOCK_MONOTONIC, &ts);
 	tg->tv_sec = ts.tv_sec;
 	tg->tv_nsec = ts.tv_nsec;

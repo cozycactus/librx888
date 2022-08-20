@@ -22,6 +22,14 @@ target_link_libraries(rx888_test rx888
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
+if(UNIX)
+if(APPLE OR CMAKE_SYSTEM MATCHES "OpenBSD")
+    target_link_libraries(rx888_test m)
+else()
+    target_link_libraries(rx888_test m rt)
+endif()
+endif()
+
 ########################################################################
 # Install built library files & utilities
 ########################################################################

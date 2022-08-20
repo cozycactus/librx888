@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifndef _WIN32
-#include <unistd.h>
+#include <time.h>
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 #include <stdbool.h>
@@ -22,7 +22,6 @@ enum rx888_command {
 	STARTFX3 = 0xAA,
 	STARTADC = 0xB2,
 };
-
 
 struct rx888_dev {
     libusb_context *ctx;
@@ -385,7 +384,7 @@ int rx888_close(rx888_dev_t *dev)
 #ifdef _WIN32
 			Sleep(1);
 #else
-			usleep(1000);
+			nanosleep((const struct timespec[]){{0, 1000000L}}, NULL);
 #endif
 		}
 

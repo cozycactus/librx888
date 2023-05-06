@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
 
@@ -22,7 +23,7 @@
 
 #include "librx888.h"
 
-#define DEFAULT_SAMPLE_RATE		2048000
+#define DEFAULT_SAMPLE_RATE		64000000
 #define DEFAULT_BUF_LENGTH      (1024 * 16 * 8)
 #define MINIMAL_BUF_LENGTH		1024
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
@@ -52,6 +53,9 @@ static enum {
 	TUNER_BENCHMARK,
 	PPM_BENCHMARK
 } test_mode = NO_BENCHMARK;
+
+uint64_t total_bytes_received = 0;
+struct timeval start_time;
 
 static int do_exit = 0;
 static rx888_dev_t *dev = NULL;
@@ -201,112 +205,25 @@ static void underrun_test(unsigned char *buf, uint32_t len, int mute)
 
 }
 
-#ifndef _WIN32
-static int ppm_gettime(struct time_generic *tg)
-{
-	int rv = ENOSYS;
-
-#ifdef __unix__
-	struct timespec ts;
-	rv = clock_gettime(CLOCK_MONOTONIC, &ts);
-	tg->tv_sec = ts.tv_sec;
-	tg->tv_nsec = ts.tv_nsec;
-#elif __APPLE__
-	struct timeval tv;
-
-	rv = gettimeofday(&tv, NULL);
-	tg->tv_sec = tv.tv_sec;
-	tg->tv_nsec = tv.tv_usec * 1000;
-#endif
-	return rv;
-}
-#endif
-
-#ifdef _WIN32
-static int ppm_gettime(struct time_generic *tg)
-{
-	int rv;
-	int64_t frac;
-	if (!tg->init) {
-		QueryPerformanceFrequency(&tg->frequency);
-		tg->init = 1;
-	}
-	rv = QueryPerformanceCounter(&tg->ticks);
-	tg->tv_sec = tg->ticks.QuadPart / tg->frequency.QuadPart;
-	frac = (int64_t)(tg->ticks.QuadPart - (tg->tv_sec * tg->frequency.QuadPart));
-	tg->tv_nsec = (long)(frac * 1000000000L / (int64_t)tg->frequency.QuadPart);
-	return !rv;
-}
-#endif
-
-static int ppm_report(uint64_t nsamples, uint64_t interval)
-{
-	double real_rate, ppm;
-
-	real_rate = nsamples * 1e9 / interval;
-	ppm = 1e6 * (real_rate / (double)samp_rate - 1.);
-	return (int)round(ppm);
-}
-
-static void ppm_test(uint32_t len)
-{
-	static uint64_t nsamples = 0;
-	static uint64_t interval = 0;
-	static uint64_t nsamples_total = 0;
-	static uint64_t interval_total = 0;
-	struct time_generic ppm_now;
-	static struct time_generic ppm_recent;
-	static enum {
-		PPM_INIT_NO,
-		PPM_INIT_DUMP,
-		PPM_INIT_RUN
-	} ppm_init = PPM_INIT_NO;
-
-	ppm_gettime(&ppm_now);
-
-	if (ppm_init != PPM_INIT_RUN) {
-		/*
-		 * Kyle Keen wrote:
-		 * PPM_DUMP_TIME throws out the first N seconds of data.
-		 * The dongle's PPM is usually very bad when first starting up,
-		 * typically incorrect by more than twice the final value.
-		 * Discarding the first few seconds allows the value to stabilize much faster.
-		*/
-		if (ppm_init == PPM_INIT_NO) {
-			ppm_recent.tv_sec = ppm_now.tv_sec + PPM_DUMP_TIME;
-			ppm_init = PPM_INIT_DUMP;
-			return;
-		}
-		if (ppm_init == PPM_INIT_DUMP && ppm_recent.tv_sec < ppm_now.tv_sec)
-			return;
-		ppm_recent = ppm_now;
-		ppm_init = PPM_INIT_RUN;
-		return;
-	}
-
-	nsamples += (uint64_t)(len / 2UL);
-	interval = (uint64_t)(ppm_now.tv_sec - ppm_recent.tv_sec);
-	if (interval < ppm_duration)
-		return;
-	interval *= 1000000000UL;
-	interval += (int64_t)(ppm_now.tv_nsec - ppm_recent.tv_nsec);
-	nsamples_total += nsamples;
-	interval_total += interval;
-	printf("real sample rate: %i current PPM: %i cumulative PPM: %i\n",
-		(int)((1000000000UL * nsamples) / interval),
-		ppm_report(nsamples, interval),
-		ppm_report(nsamples_total, interval_total));
-	ppm_recent = ppm_now;
-	nsamples = 0;
-}
-
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
-    (void)ctx;
-	underrun_test(buf, len, 0);
+	(void)buf;
+	(void)ctx;
+    // Process the received data (buf) as needed
 
-	if (test_mode == PPM_BENCHMARK)
-		ppm_test(len);
+    // Update the total bytes received
+    total_bytes_received += len;
+
+    // Calculate the elapsed time in seconds
+    struct timeval current_time;
+    gettimeofday(&current_time, NULL);
+    double elapsed_time = (current_time.tv_sec - start_time.tv_sec) +
+                          (current_time.tv_usec - start_time.tv_usec) / 1000000.0;
+
+    // Calculate the data rate in MegaBytes per second (MBps)
+    // Note: 1 MegaByte = 1,000,000 bytes
+    double data_rate_MBps = total_bytes_received / (elapsed_time * 1000000);
+    printf("Data rate: %f MBps\n", data_rate_MBps);
 }
 
 int main(int argc, char **argv)
@@ -405,6 +322,8 @@ int main(int argc, char **argv)
 				"samples get lost. If you observe no "
 				"further output, everything is fine.\n\n");
 	}
+
+	gettimeofday(&start_time, NULL);
 
 	if (sync_mode) {
 		fprintf(stderr, "Reading samples in sync mode...\n");

@@ -12,6 +12,8 @@
 #include <sys/time.h>
 #else
 #include <time.h>
+#include <sys/time.h>
+
 #endif
 
 #ifndef _WIN32

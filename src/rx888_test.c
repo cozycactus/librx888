@@ -149,12 +149,7 @@ void usage(void)
 		"Usage:\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
-		"\t[-t enable Elonics E4000 tuner benchmark]\n"
-#ifndef _WIN32
-		"\t[-p[seconds] enable PPM error measurement (default: 10 seconds)]\n"
-#endif
-		"\t[-b output_block_size (default: 16 * 16384)]\n"
-		"\t[-S force sync output (default: async)]\n");
+		"\t[-b output_block_size (default: 16 * 16384)]\n");
 	exit(1);
 }
 
@@ -180,52 +175,25 @@ static void sighandler(int signum)
 }
 #endif
 
-static void underrun_test(unsigned char *buf, uint32_t len, int mute)
-{
-	uint32_t i, lost = 0;
-	static uint8_t bcnt, uninit = 1;
-
-	if (uninit) {
-		bcnt = buf[0];
-		uninit = 0;
-	}
-	for (i = 0; i < len; i++) {
-		if(bcnt != buf[i]) {
-			lost += (buf[i] > bcnt) ? (buf[i] - bcnt) : (bcnt - buf[i]);
-			bcnt = buf[i];
-		}
-
-		bcnt++;
-	}
-
-	total_samples += len;
-	dropped_samples += lost;
-	if (mute)
-		return;
-	if (lost)
-		printf("lost at least %d bytes\n", lost);
-
-}
-
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
 	(void)buf;
 	(void)ctx;
-    // Process the received data (buf) as needed
-
-    // Update the total bytes received
-    total_bytes_received += len;
-
-    // Calculate the elapsed time in seconds
     struct timeval current_time;
     gettimeofday(&current_time, NULL);
-    double elapsed_time = (current_time.tv_sec - start_time.tv_sec) +
-                          (current_time.tv_usec - start_time.tv_usec) / 1000000.0;
 
-    // Calculate the data rate in MegaBytes per second (MBps)
-    // Note: 1 MegaByte = 1,000,000 bytes
-    double data_rate_MBps = total_bytes_received / (elapsed_time * 1000000);
-    printf("Data rate: %f MBps\n", data_rate_MBps);
+    if (total_bytes_received == 0) {
+        start_time = current_time;
+    }
+
+    total_bytes_received += len;
+    double elapsed_time = (current_time.tv_sec - start_time.tv_sec) + 
+                          ((current_time.tv_usec - start_time.tv_usec)/1000000.0);
+
+    if (elapsed_time > 0) { // to prevent divide by zero
+        double megabytes_per_second = (total_bytes_received / elapsed_time) / (1024 * 1024);
+        printf("Data rate: %f MB/s\n", megabytes_per_second);
+    }
 }
 
 int main(int argc, char **argv)
@@ -233,8 +201,7 @@ int main(int argc, char **argv)
 #ifndef _WIN32
 	struct sigaction sigact;
 #endif
-	int n_read, r, opt;
-	int sync_mode = 0;
+	int r, opt;
 	uint8_t *buffer;
 	int dev_index = 0;
 	int dev_given = 0;
@@ -259,9 +226,6 @@ int main(int argc, char **argv)
 			test_mode = PPM_BENCHMARK;
 			if (optarg)
 				ppm_duration = atoi(optarg);
-			break;
-		case 'S':
-			sync_mode = 1;
 			break;
 		case 'h':
 		default:
@@ -311,44 +275,12 @@ int main(int argc, char **argv)
 	/* Set the sample rate */
 	verbose_set_sample_rate(dev, samp_rate);
 
-	
-
-	if ((test_mode == PPM_BENCHMARK) && !sync_mode) {
-		fprintf(stderr, "Reporting PPM error measurement every %u seconds...\n", ppm_duration);
-		fprintf(stderr, "Press ^C after a few minutes.\n");
-	}
-
-	if (test_mode == NO_BENCHMARK) {
-		fprintf(stderr, "\nInfo: This tool will continuously"
-				" read from the device, and report if\n"
-				"samples get lost. If you observe no "
-				"further output, everything is fine.\n\n");
-	}
-
 	gettimeofday(&start_time, NULL);
 
-	if (sync_mode) {
-		fprintf(stderr, "Reading samples in sync mode...\n");
-		fprintf(stderr, "(Samples are being lost but not reported.)\n");
-		while (!do_exit) {
-			r = rx888_read_sync(dev, buffer, out_block_size, &n_read);
-			if (r < 0) {
-				fprintf(stderr, "WARNING: sync read failed.\n");
-				break;
-			}
-
-			if ((uint32_t)n_read < out_block_size) {
-				fprintf(stderr, "Short read, samples lost, exiting!\n");
-				break;
-			}
-			underrun_test(buffer, n_read, 1);
-		}
-	} else {
-		fprintf(stderr, "Reading samples in async mode...\n");
-		r = rx888_read_async(dev, rtlsdr_callback, NULL,
+	fprintf(stderr, "Reading samples in async mode...\n");
+	r = rx888_read_async(dev, rtlsdr_callback, NULL,
 				      0, out_block_size);
-	}
-
+	
 	if (do_exit) {
 		fprintf(stderr, "\nUser cancel, exiting...\n");
 		fprintf(stderr, "Samples per million lost (minimum): %i\n", (int)(1000000L * dropped_samples / total_samples));

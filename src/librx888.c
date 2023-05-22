@@ -22,6 +22,7 @@ enum rx888_async_status {
 enum rx888_command {
 	STARTFX3 = 0xAA,
 	STARTADC = 0xB2,
+	STOPFX3 = 0xAB
 };
 
 struct rx888_dev {
@@ -633,6 +634,7 @@ int rx888_cancel_async(rx888_dev_t *dev)
 
 	/* if streaming, try to cancel gracefully */
 	if (RX888_RUNNING == dev->async_status) {
+		rx888_send_command(dev->dev_handle, STOPFX3, 0);
 		dev->async_status = RX888_CANCELING;
 		dev->async_cancel = true;
 		return 0;

@@ -5,3 +5,4 @@
 </a>
 # librx888
 # This is a work in progress
+Based on https://github.com/steve-m/librtlsdr

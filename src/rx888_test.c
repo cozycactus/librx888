@@ -20,7 +20,7 @@
 #include <unistd.h>
 #else
 #include <windows.h>
-#include "getopt/getopt.h"
+#include "getopt.h"
 #endif
 
 #include "librx888.h"
@@ -160,7 +160,7 @@ sighandler(int signum)
 	if (CTRL_C_EVENT == signum) {
 		fprintf(stderr, "Signal caught, exiting!\n");
 		do_exit = 1;
-		rtlsdr_cancel_async(dev);
+		rx888_cancel_async(dev);
 		return TRUE;
 	}
 	return FALSE;

@@ -39,21 +39,21 @@ struct time_generic
 /* holds all the platform specific values */
 {
 #ifndef _WIN32
-	time_t tv_sec;
-	long tv_nsec;
+    time_t tv_sec;
+    long tv_nsec;
 #else
-	long tv_sec;
-	long tv_nsec;
-	int init;
-	LARGE_INTEGER frequency;
-	LARGE_INTEGER ticks;
+    long tv_sec;
+    long tv_nsec;
+    int init;
+    LARGE_INTEGER frequency;
+    LARGE_INTEGER ticks;
 #endif
 };
 
 static enum {
-	NO_BENCHMARK,
-	TUNER_BENCHMARK,
-	PPM_BENCHMARK
+    NO_BENCHMARK,
+    TUNER_BENCHMARK,
+    PPM_BENCHMARK
 } test_mode = NO_BENCHMARK;
 
 uint64_t total_bytes_received = 0;
@@ -71,114 +71,114 @@ static unsigned int ppm_duration = PPM_DURATION;
 
 int verbose_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
 {
-	int r;
-	r = rx888_set_sample_rate(dev, samp_rate);
-	if (r < 0) {
-		fprintf(stderr, "WARNING: Failed to set sample rate.\n");
-	} else {
-		fprintf(stderr, "Sampling at %u S/s.\n", samp_rate);
-	}
-	return r;
+    int r;
+    r = rx888_set_sample_rate(dev, samp_rate);
+    if (r < 0) {
+        fprintf(stderr, "WARNING: Failed to set sample rate.\n");
+    } else {
+        fprintf(stderr, "Sampling at %u S/s.\n", samp_rate);
+    }
+    return r;
 }
 
 
 int verbose_device_search(char *s)
 {
-	int i, device_count, device, offset;
-	char *s2;
-	char vendor[256], product[256], serial[256];
-	device_count = rx888_get_device_count();
-	if (!device_count) {
-		fprintf(stderr, "No supported devices found.\n");
-		return -1;
-	}
-	fprintf(stderr, "Found %d device(s):\n", device_count);
-	for (i = 0; i < device_count; i++) {
-		rx888_get_device_usb_strings(i, vendor, product, serial);
-		fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
-	}
-	fprintf(stderr, "\n");
-	/* does string look like raw id number */
-	device = (int)strtol(s, &s2, 0);
-	if (s2[0] == '\0' && device >= 0 && device < device_count) {
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rx888_get_device_name((uint32_t)device));
-		return device;
-	}
-	/* does string exact match a serial */
-	for (i = 0; i < device_count; i++) {
-		rx888_get_device_usb_strings(i, vendor, product, serial);
-		if (strcmp(s, serial) != 0) {
-			continue;}
-		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rx888_get_device_name((uint32_t)device));
-		return device;
-	}
-	/* does string prefix match a serial */
-	for (i = 0; i < device_count; i++) {
-		rx888_get_device_usb_strings(i, vendor, product, serial);
-		if (strncmp(s, serial, strlen(s)) != 0) {
-			continue;}
-		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rx888_get_device_name((uint32_t)device));
-		return device;
-	}
-	/* does string suffix match a serial */
-	for (i = 0; i < device_count; i++) {
-		rx888_get_device_usb_strings(i, vendor, product, serial);
-		offset = strlen(serial) - strlen(s);
-		if (offset < 0) {
-			continue;}
-		if (strncmp(s, serial+offset, strlen(s)) != 0) {
-			continue;}
-		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rx888_get_device_name((uint32_t)device));
-		return device;
-	}
-	fprintf(stderr, "No matching devices found.\n");
-	return -1;
+    int i, device_count, device, offset;
+    char *s2;
+    char vendor[256], product[256], serial[256];
+    device_count = rx888_get_device_count();
+    if (!device_count) {
+        fprintf(stderr, "No supported devices found.\n");
+        return -1;
+    }
+    fprintf(stderr, "Found %d device(s):\n", device_count);
+    for (i = 0; i < device_count; i++) {
+        rx888_get_device_usb_strings(i, vendor, product, serial);
+        fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
+    }
+    fprintf(stderr, "\n");
+    /* does string look like raw id number */
+    device = (int)strtol(s, &s2, 0);
+    if (s2[0] == '\0' && device >= 0 && device < device_count) {
+        fprintf(stderr, "Using device %d: %s\n",
+            device, rx888_get_device_name((uint32_t)device));
+        return device;
+    }
+    /* does string exact match a serial */
+    for (i = 0; i < device_count; i++) {
+        rx888_get_device_usb_strings(i, vendor, product, serial);
+        if (strcmp(s, serial) != 0) {
+            continue;}
+        device = i;
+        fprintf(stderr, "Using device %d: %s\n",
+            device, rx888_get_device_name((uint32_t)device));
+        return device;
+    }
+    /* does string prefix match a serial */
+    for (i = 0; i < device_count; i++) {
+        rx888_get_device_usb_strings(i, vendor, product, serial);
+        if (strncmp(s, serial, strlen(s)) != 0) {
+            continue;}
+        device = i;
+        fprintf(stderr, "Using device %d: %s\n",
+            device, rx888_get_device_name((uint32_t)device));
+        return device;
+    }
+    /* does string suffix match a serial */
+    for (i = 0; i < device_count; i++) {
+        rx888_get_device_usb_strings(i, vendor, product, serial);
+        offset = strlen(serial) - strlen(s);
+        if (offset < 0) {
+            continue;}
+        if (strncmp(s, serial+offset, strlen(s)) != 0) {
+            continue;}
+        device = i;
+        fprintf(stderr, "Using device %d: %s\n",
+            device, rx888_get_device_name((uint32_t)device));
+        return device;
+    }
+    fprintf(stderr, "No matching devices found.\n");
+    return -1;
 }
 
 void usage(void)
 {
-	fprintf(stderr,
-		"rx888_test, a benchmark tool for rx888 receiver\n\n"
-		"Usage:\n"
-		"\t[-s samplerate (default: 2048000 Hz)]\n"
-		"\t[-d device_index (default: 0)]\n"
-		"\t[-b output_block_size (default: 16 * 16384)]\n");
-	exit(1);
+    fprintf(stderr,
+        "rx888_test, a benchmark tool for rx888 receiver\n\n"
+        "Usage:\n"
+        "\t[-s samplerate (default: 2048000 Hz)]\n"
+        "\t[-d device_index (default: 0)]\n"
+        "\t[-b output_block_size (default: 16 * 16384)]\n");
+    exit(1);
 }
 
 #ifdef _WIN32
 BOOL WINAPI
 sighandler(int signum)
 {
-	if (CTRL_C_EVENT == signum) {
-		fprintf(stderr, "Signal caught, exiting!\n");
-		do_exit = 1;
-		rx888_cancel_async(dev);
-		return TRUE;
-	}
-	return FALSE;
+    if (CTRL_C_EVENT == signum) {
+        fprintf(stderr, "Signal caught, exiting!\n");
+        do_exit = 1;
+        rx888_cancel_async(dev);
+        return TRUE;
+    }
+    return FALSE;
 }
 #else
 static void sighandler(int signum)
 {
     (void)signum;
-	fprintf(stderr, "Signal caught, exiting!\n");
-	do_exit = 1;
-	rx888_cancel_async(dev);
+    fprintf(stderr, "Signal caught, exiting!\n");
+    do_exit = 1;
+    rx888_cancel_async(dev);
 }
 #endif
 
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
-	(void)buf;
-	(void)ctx;
+    (void)buf;
+    (void)ctx;
     struct timeval current_time;
     gettimeofday(&current_time, NULL);
 
@@ -199,97 +199,97 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 int main(int argc, char **argv)
 {
 #ifndef _WIN32
-	struct sigaction sigact;
+    struct sigaction sigact;
 #endif
-	int r, opt;
-	uint8_t *buffer;
-	int dev_index = 0;
-	int dev_given = 0;
-	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
+    int r, opt;
+    uint8_t *buffer;
+    int dev_index = 0;
+    int dev_given = 0;
+    uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 
-	while ((opt = getopt(argc, argv, "d:s:b:tp::Sh")) != -1) {
-		switch (opt) {
-		case 'd':
-			dev_index = verbose_device_search(optarg);
-			dev_given = 1;
-			break;
-		case 's':
-			samp_rate = (uint32_t)atof(optarg);
-			break;
-		case 'b':
-			out_block_size = (uint32_t)atof(optarg);
-			break;
-		case 't':
-			test_mode = TUNER_BENCHMARK;
-			break;
-		case 'p':
-			test_mode = PPM_BENCHMARK;
-			if (optarg)
-				ppm_duration = atoi(optarg);
-			break;
-		case 'h':
-		default:
-			usage();
-			break;
-		}
-	}
+    while ((opt = getopt(argc, argv, "d:s:b:tp::Sh")) != -1) {
+        switch (opt) {
+        case 'd':
+            dev_index = verbose_device_search(optarg);
+            dev_given = 1;
+            break;
+        case 's':
+            samp_rate = (uint32_t)atof(optarg);
+            break;
+        case 'b':
+            out_block_size = (uint32_t)atof(optarg);
+            break;
+        case 't':
+            test_mode = TUNER_BENCHMARK;
+            break;
+        case 'p':
+            test_mode = PPM_BENCHMARK;
+            if (optarg)
+                ppm_duration = atoi(optarg);
+            break;
+        case 'h':
+        default:
+            usage();
+            break;
+        }
+    }
 
-	if(out_block_size < MINIMAL_BUF_LENGTH ||
-	   out_block_size > MAXIMAL_BUF_LENGTH ){
-		fprintf(stderr,
-			"Output block size wrong value, falling back to default\n");
-		fprintf(stderr,
-			"Minimal length: %u\n", MINIMAL_BUF_LENGTH);
-		fprintf(stderr,
-			"Maximal length: %u\n", MAXIMAL_BUF_LENGTH);
-		out_block_size = DEFAULT_BUF_LENGTH;
-	}
+    if(out_block_size < MINIMAL_BUF_LENGTH ||
+       out_block_size > MAXIMAL_BUF_LENGTH ){
+        fprintf(stderr,
+            "Output block size wrong value, falling back to default\n");
+        fprintf(stderr,
+            "Minimal length: %u\n", MINIMAL_BUF_LENGTH);
+        fprintf(stderr,
+            "Maximal length: %u\n", MAXIMAL_BUF_LENGTH);
+        out_block_size = DEFAULT_BUF_LENGTH;
+    }
 
-	buffer = malloc(out_block_size * sizeof(uint8_t));
+    buffer = malloc(out_block_size * sizeof(uint8_t));
 
-	if (!dev_given) {
-		dev_index = verbose_device_search("0");
-	}
+    if (!dev_given) {
+        dev_index = verbose_device_search("0");
+    }
 
-	if (dev_index < 0) {
-		exit(1);
-	}
+    if (dev_index < 0) {
+        exit(1);
+    }
 
-	r = rx888_open(&dev, (uint32_t)dev_index);
-	if (r < 0) {
-		fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
-		exit(1);
-	}
+    r = rx888_open(&dev, (uint32_t)dev_index);
+    if (r < 0) {
+        fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
+        exit(1);
+    }
 #ifndef _WIN32
-	sigact.sa_handler = sighandler;
-	sigemptyset(&sigact.sa_mask);
-	sigact.sa_flags = 0;
-	sigaction(SIGINT, &sigact, NULL);
-	sigaction(SIGTERM, &sigact, NULL);
-	sigaction(SIGQUIT, &sigact, NULL);
-	sigaction(SIGPIPE, &sigact, NULL);
+    sigact.sa_handler = sighandler;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = 0;
+    sigaction(SIGINT, &sigact, NULL);
+    sigaction(SIGTERM, &sigact, NULL);
+    sigaction(SIGQUIT, &sigact, NULL);
+    sigaction(SIGPIPE, &sigact, NULL);
 #else
-	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
+    SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
-	
-	/* Set the sample rate */
-	verbose_set_sample_rate(dev, samp_rate);
+    
+    /* Set the sample rate */
+    verbose_set_sample_rate(dev, samp_rate);
 
-	gettimeofday(&start_time, NULL);
+    gettimeofday(&start_time, NULL);
 
-	fprintf(stderr, "Reading samples in async mode...\n");
-	r = rx888_read_async(dev, rtlsdr_callback, NULL,
-				      0, out_block_size);
-	
-	if (do_exit) {
-		fprintf(stderr, "\nUser cancel, exiting...\n");
-		fprintf(stderr, "Samples per million lost (minimum): %i\n", (int)(1000000L * dropped_samples / total_samples));
-	}
-	else
-		fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
+    fprintf(stderr, "Reading samples in async mode...\n");
+    r = rx888_read_async(dev, rtlsdr_callback, NULL,
+                      0, out_block_size);
+    
+    if (do_exit) {
+        fprintf(stderr, "\nUser cancel, exiting...\n");
+        fprintf(stderr, "Samples per million lost (minimum): %i\n", (int)(1000000L * dropped_samples / total_samples));
+    }
+    else
+        fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-	rx888_close(dev);
-	free (buffer);
+    rx888_close(dev);
+    free (buffer);
 
-	return r >= 0 ? r : -r;
+    return r >= 0 ? r : -r;
 }

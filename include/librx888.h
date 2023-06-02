@@ -27,9 +27,9 @@ const char* rx888_get_device_name(uint32_t index);
  * \return 0 on success
  */
 int rx888_get_device_usb_strings(uint32_t index,
-					     char *manufact,
-					     char *product,
-					     char *serial);
+                         char *manufact,
+                         char *product,
+                         char *serial);
 
 
 /*!
@@ -85,10 +85,10 @@ typedef void(*rx888_read_async_cb_t)(unsigned char *buf, uint32_t len, void *ctx
  * \return 0 on success
  */
 int rx888_read_async(rx888_dev_t *dev,
-				 rx888_read_async_cb_t cb,
-				 void *ctx,
-				 uint32_t buf_num,
-				 uint32_t buf_len);
+                 rx888_read_async_cb_t cb,
+                 void *ctx,
+                 uint32_t buf_num,
+                 uint32_t buf_len);
 
 /*!
  * Cancel all pending asynchronous operations on the device.

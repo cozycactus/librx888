@@ -467,9 +467,7 @@ static int _rx888_alloc_async_buffers(rx888_dev_t *dev)
     if (dev->xfer_buf)
         return -2;
 
-    dev->xfer_buf = malloc(dev->xfer_buf_num * sizeof(unsigned char *));
-    memset(dev->xfer_buf, 0, dev->xfer_buf_num * sizeof(unsigned char *));
-
+    dev->xfer_buf = calloc(dev->xfer_buf_num, sizeof(unsigned char *));
     
     for (i = 0; i < dev->xfer_buf_num; ++i) {
         dev->xfer_buf[i] = malloc(dev->xfer_buf_len);

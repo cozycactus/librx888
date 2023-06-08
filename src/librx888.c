@@ -22,7 +22,9 @@ enum rx888_async_status {
 enum rx888_command {
     STARTFX3 = 0xAA,
     STARTADC = 0xB2,
-    STOPFX3 = 0xAB
+    STOPFX3 = 0xAB,
+    R820T2STDBY = 0xB8,
+    GPIOFX3 = 0xAD
 };
 
 struct rx888_dev {
@@ -56,7 +58,7 @@ static rx888_t known_devices[] = {
 
 #define DEFAULT_BUF_NUMBER	16
 #define DEFAULT_BUF_LENGTH  (1024 * 16 * 8)
-#define CTRL_TIMEOUT 5000
+#define CTRL_TIMEOUT 1000
 
 static int rx888_send_command(struct libusb_device_handle *dev_handle,
                                  enum rx888_command cmd,uint32_t data)
@@ -80,7 +82,7 @@ int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
     if (!dev)
         return -1;
 
-    /* check if the rate is supported by the resampler */
+    /* check if the rate is supported by the device */
     if ((samp_rate <= 10000) || (samp_rate > 150000000)) {
         fprintf(stderr, "Invalid sample rate: %u Hz\n", samp_rate);
         return -EINVAL;
@@ -359,6 +361,11 @@ int rx888_open(rx888_dev_t **out_dev, uint32_t index)
     dev->dev_lost = false;
 
     *out_dev = dev;
+    rx888_send_command(dev->dev_handle, R820T2STDBY, 0);
+    rx888_send_command(dev->dev_handle, GPIOFX3, 24576);
+    rx888_send_command(dev->dev_handle, GPIOFX3, 8192);
+    rx888_send_command(dev->dev_handle, STARTADC, dev->sample_rate);
+    rx888_send_command(dev->dev_handle, STARTFX3, 0);
     return 0;
 err:
     if (dev) {
@@ -566,7 +573,7 @@ int rx888_read_async(rx888_dev_t *dev, rx888_read_async_cb_t cb, void *ctx,
             break;
         }
     }
-    rx888_send_command(dev->dev_handle, STARTADC, dev->sample_rate);
+    
     rx888_send_command(dev->dev_handle, STARTFX3, 0);
 
     while (RX888_INACTIVE != dev->async_status) {

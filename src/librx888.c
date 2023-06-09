@@ -58,7 +58,7 @@ static rx888_t known_devices[] = {
 
 #define DEFAULT_BUF_NUMBER	16
 #define DEFAULT_BUF_LENGTH  (1024 * 16 * 8)
-#define CTRL_TIMEOUT 1000
+#define CTRL_TIMEOUT 5000
 
 static int rx888_send_command(struct libusb_device_handle *dev_handle,
                                  enum rx888_command cmd,uint32_t data)
@@ -396,6 +396,8 @@ int rx888_close(rx888_dev_t *dev)
             nanosleep((const struct timespec[]){{0, 1000000L}}, NULL);
 #endif
         }
+        rx888_send_command(dev->dev_handle, STOPFX3, 0);
+
 
     }
 
@@ -574,7 +576,8 @@ int rx888_read_async(rx888_dev_t *dev, rx888_read_async_cb_t cb, void *ctx,
         }
     }
     
-    rx888_send_command(dev->dev_handle, STARTFX3, 0);
+    //rx888_send_command(dev->dev_handle, STARTADC, dev->sample_rate);
+    //rx888_send_command(dev->dev_handle, STARTFX3, 0);
 
     while (RX888_INACTIVE != dev->async_status) {
         r = libusb_handle_events_timeout_completed(dev->ctx, &tv,
@@ -639,9 +642,9 @@ int rx888_cancel_async(rx888_dev_t *dev)
 
     /* if streaming, try to cancel gracefully */
     if (RX888_RUNNING == dev->async_status) {
-        rx888_send_command(dev->dev_handle, STOPFX3, 0);
         dev->async_status = RX888_CANCELING;
         dev->async_cancel = true;
+        //rx888_send_command(dev->dev_handle, STOPFX3, 0);
         return 0;
     }
 

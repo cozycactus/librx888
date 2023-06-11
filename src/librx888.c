@@ -1,8 +1,10 @@
 /*
- * librx888.c - Library for the RX888 SDR
+ * rx888, a SDR receiver driver for the RX888 hardware, based on rtl-sdr project
+ * Copyright (C) 2022-2023 by Ruslan Migirov <trapi78@gmail.com>
+ *
+ * Based on rtl-sdr, turns your Realtek RTL2832 based DVB dongle into a SDR receiver
  * Copyright (C) 2012-2014 by Steve Markgraf <steve@steve-m.de>
  * Copyright (C) 2012 by Dimitri Stolnikov <horiz0n@gmx.net>
- * Copyright (C) 2022-2023 by Ruslan Migirov <trapi78@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #define _POSIX_C_SOURCE 199309L
 #include <errno.h>

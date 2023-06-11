@@ -1,8 +1,10 @@
 /*
- * rx888 - USB 3.0 based SDR receiver for 6m to 160m
- * Copyright (C) 2012-2013 by Steve Markgraf <steve@steve-m.de>
- * Copyright (C) 2012 by Dimitri Stolnikov <horiz0n@gmx.net>
+ * rx888, a SDR receiver driver for the RX888 hardware, based on rtl-sdr project
  * Copyright (C) 2022-2023 by Ruslan Migirov <trapi78@gmail.com>
+ *
+ * Based on rtl-sdr, turns your Realtek RTL2832 based DVB dongle into a SDR receiver
+ * Copyright (C) 2012-2014 by Steve Markgraf <steve@steve-m.de>
+ * Copyright (C) 2012 by Dimitri Stolnikov <horiz0n@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+ 
 #ifndef C7B7DE77_F735_4B88_A492_1ED83430C335
 #define C7B7DE77_F735_4B88_A492_1ED83430C335
 

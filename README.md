@@ -4,5 +4,5 @@
        src="https://scan.coverity.com/projects/25395/badge.svg"/>
 </a>
 # librx888
-# This is a work in progress
+# Works with https://github.com/cozycactus/SoapyRX888
 Based on https://github.com/steve-m/librtlsdr

@@ -385,8 +385,9 @@ int rx888_open(rx888_dev_t **out_dev, uint32_t index)
 
     *out_dev = dev;
     rx888_send_command(dev->dev_handle, R820T2STDBY, 0);
-    rx888_send_command(dev->dev_handle, GPIOFX3, 24576);
-    rx888_send_command(dev->dev_handle, GPIOFX3, 8192);
+    rx888_send_command(dev->dev_handle, GPIOFX3, 16384);
+    //rx888_send_command(dev->dev_handle, GPIOFX3, 49152);
+    //rx888_send_command(dev->dev_handle, GPIOFX3, 0);
     rx888_send_command(dev->dev_handle, STARTADC, dev->sample_rate);
     rx888_send_command(dev->dev_handle, STARTFX3, 0);
     return 0;

@@ -50,6 +50,30 @@ enum rx888_command {
     GPIOFX3 = 0xAD
 };
 
+// Bitmasks for GPIO pins
+enum GPIOPin {
+    ATT_LE = 1U << 0,
+    ATT_CLK = 1U << 1,
+    ATT_DATA = 1U << 2,
+    SEL0 = 1U << 3,
+    SEL1 = 1U << 4,
+    SHDWN = 1U << 5,
+    DITH = 1U << 6,
+    RAND = 1U << 7,
+    BIAS_HF = 1U << 8,
+    BIAS_VHF = 1U << 9,
+    LED_YELLOW = 1U << 10,
+    LED_RED = 1U << 11,
+    LED_BLUE = 1U << 12,
+    ATT_SEL0 = 1U << 13,
+    ATT_SEL1 = 1U << 14,
+    
+    // RX888r2
+    VHF_EN = 1U << 15,
+    PGA_EN = 1U << 16,
+};
+
+
 struct rx888_dev {
     libusb_context *ctx;
     struct libusb_device_handle *dev_handle;
@@ -98,6 +122,18 @@ static int rx888_send_command(struct libusb_device_handle *dev_handle,
   }
 
   return 0;
+}
+
+int rx888_set_hf_attenuation(rx888_dev_t *dev, uint8_t rf_gain)
+{
+    if (!dev)
+        return -1;
+
+    
+
+    rx888_send_command(dev->dev_handle, GPIOFX3, rf_gain);
+
+    return 0;
 }
 
 int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)

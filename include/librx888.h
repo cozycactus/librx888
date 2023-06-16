@@ -69,6 +69,10 @@ int rx888_open(rx888_dev_t **dev, uint32_t index);
 
 int rx888_close(rx888_dev_t *dev);
 
+enum rx888_device {
+    RX888_DEVICE = 0
+};
+
 /*!
  * Set the sample rate for the device.
  *

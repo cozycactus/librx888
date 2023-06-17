@@ -73,6 +73,8 @@ enum rx888_device {
     RX888_DEVICE = 0
 };
 
+int rx888_set_hf_attenuation(rx888_dev_t *dev, double rf_gain);
+
 /*!
  * Set the sample rate for the device.
  *

@@ -50,6 +50,30 @@ enum rx888_command {
     GPIOFX3 = 0xAD
 };
 
+// Bitmasks for GPIO pins
+enum GPIOPin {
+    ATT_LE = 1U << 0,
+    ATT_CLK = 1U << 1,
+    ATT_DATA = 1U << 2,
+    SEL0 = 1U << 3,
+    SEL1 = 1U << 4,
+    SHDWN = 1U << 5,
+    DITH = 1U << 6,
+    RAND = 1U << 7,
+    BIAS_HF = 1U << 8,
+    BIAS_VHF = 1U << 9,
+    LED_YELLOW = 1U << 10,
+    LED_RED = 1U << 11,
+    LED_BLUE = 1U << 12,
+    ATT_SEL0 = 1U << 13,
+    ATT_SEL1 = 1U << 14,
+    
+    // RX888r2
+    VHF_EN = 1U << 15,
+    PGA_EN = 1U << 16,
+};
+
+
 struct rx888_dev {
     libusb_context *ctx;
     struct libusb_device_handle *dev_handle;
@@ -66,6 +90,7 @@ struct rx888_dev {
     int dev_lost;
     int driver_active;
     unsigned int xfer_errors;
+    uint32_t gpio_state;
 };
 
 typedef struct rx888 {
@@ -98,6 +123,34 @@ static int rx888_send_command(struct libusb_device_handle *dev_handle,
   }
 
   return 0;
+}
+
+int rx888_set_hf_attenuation(rx888_dev_t *dev, double rf_gain)
+{
+    if (!dev)
+        return -1;
+
+    // Verify that rf_gain is one of the expected values
+    if (rf_gain != 0.0 && rf_gain != -10.0 && rf_gain != -20.0)
+        return -1;
+
+    // Set the HF attenuation
+    if (rf_gain == 0.0) {
+        dev->gpio_state &= ~ATT_SEL0; // Clear the bit 13
+        dev->gpio_state |= ATT_SEL1; // Set the bit 14
+        } 
+    else if (rf_gain == -10.0) {
+        dev->gpio_state |= ATT_SEL0; // Set the bit 13
+        dev->gpio_state |= ATT_SEL1; // Set the bit 14
+        }
+    else if (rf_gain == -20.0) {
+        dev->gpio_state |= ATT_SEL0; // Set the bit 13
+        dev->gpio_state &= ~ATT_SEL1; // Clear the bit 14
+        }
+
+    rx888_send_command(dev->dev_handle, GPIOFX3, dev->gpio_state);
+
+    return 0;
 }
 
 int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
@@ -385,9 +438,6 @@ int rx888_open(rx888_dev_t **out_dev, uint32_t index)
 
     *out_dev = dev;
     rx888_send_command(dev->dev_handle, R820T2STDBY, 0);
-    rx888_send_command(dev->dev_handle, GPIOFX3, 16384);
-    //rx888_send_command(dev->dev_handle, GPIOFX3, 49152);
-    //rx888_send_command(dev->dev_handle, GPIOFX3, 0);
     rx888_send_command(dev->dev_handle, STARTADC, dev->sample_rate);
     rx888_send_command(dev->dev_handle, STARTFX3, 0);
     return 0;

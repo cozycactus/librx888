@@ -198,7 +198,7 @@ static void sighandler(int signum)
 }
 #endif
 
-static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
+static void rx888_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
     (void)buf;
     (void)ctx;
@@ -280,7 +280,7 @@ int main(int argc, char **argv)
 
     r = rx888_open(&dev, (uint32_t)dev_index);
     if (r < 0) {
-        fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
+        fprintf(stderr, "Failed to open rx888 device #%d.\n", dev_index);
         exit(1);
     }
 #ifndef _WIN32
@@ -301,7 +301,7 @@ int main(int argc, char **argv)
     gettimeofday(&start_time, NULL);
 
     fprintf(stderr, "Reading samples in async mode...\n");
-    r = rx888_read_async(dev, rtlsdr_callback, NULL,
+    r = rx888_read_async(dev, rx888_callback, NULL,
                       0, out_block_size);
     
     if (do_exit) {

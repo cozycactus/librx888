@@ -25,7 +25,7 @@ target_link_libraries(rx888_test rx888
     ${CMAKE_THREAD_LIBS_INIT}
 )
 target_link_libraries(rx888_rec rx888
-    ${LIBUSB_LIBRARIES}
+    ${LIBUSB_LINK_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
 

@@ -54,6 +54,96 @@ int verbose_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
 	return r;
 }
 
+
+int verbose_device_search(char *s)
+{
+	int i, device_count, device, offset;
+	char *s2;
+	char vendor[256], product[256], serial[256];
+	device_count = rx888_get_device_count();
+	if (!device_count) {
+		fprintf(stderr, "No supported devices found.\n");
+		return -1;
+	}
+	fprintf(stderr, "Found %d device(s):\n", device_count);
+	for (i = 0; i < device_count; i++) {
+		rx888_get_device_usb_strings(i, vendor, product, serial);
+		fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
+	}
+	fprintf(stderr, "\n");
+	/* does string look like raw id number */
+	device = (int)strtol(s, &s2, 0);
+	if (s2[0] == '\0' && device >= 0 && device < device_count) {
+		fprintf(stderr, "Using device %d: %s\n",
+			device, rx888_get_device_name((uint32_t)device));
+		return device;
+	}
+	/* does string exact match a serial */
+	for (i = 0; i < device_count; i++) {
+		rx888_get_device_usb_strings(i, vendor, product, serial);
+		if (strcmp(s, serial) != 0) {
+			continue;}
+		device = i;
+		fprintf(stderr, "Using device %d: %s\n",
+			device, rx888_get_device_name((uint32_t)device));
+		return device;
+	}
+	/* does string prefix match a serial */
+	for (i = 0; i < device_count; i++) {
+		rx888_get_device_usb_strings(i, vendor, product, serial);
+		if (strncmp(s, serial, strlen(s)) != 0) {
+			continue;}
+		device = i;
+		fprintf(stderr, "Using device %d: %s\n",
+			device, rx888_get_device_name((uint32_t)device));
+		return device;
+	}
+	/* does string suffix match a serial */
+	for (i = 0; i < device_count; i++) {
+		rx888_get_device_usb_strings(i, vendor, product, serial);
+		offset = strlen(serial) - strlen(s);
+		if (offset < 0) {
+			continue;}
+		if (strncmp(s, serial+offset, strlen(s)) != 0) {
+			continue;}
+		device = i;
+		fprintf(stderr, "Using device %d: %s\n",
+			device, rx888_get_device_name((uint32_t)device));
+		return device;
+	}
+	fprintf(stderr, "No matching devices found.\n");
+	return -1;
+}
+
+double atofs(char *s)
+/* standard suffixes */
+{
+	char last;
+	int len;
+	double suff = 1.0;
+	len = strlen(s);
+	last = s[len-1];
+	s[len-1] = '\0';
+	switch (last) {
+		case 'g':
+		case 'G':
+			suff *= 1e3;
+			/* fall-through */
+		case 'm':
+		case 'M':
+			suff *= 1e3;
+			/* fall-through */
+		case 'k':
+		case 'K':
+			suff *= 1e3;
+			suff *= atof(s);
+			s[len-1] = last;
+			return suff;
+	}
+	s[len-1] = last;
+	return atof(s);
+}
+
 void usage(void)
 {
 	fprintf(stderr,
@@ -83,6 +173,7 @@ sighandler(int signum)
 #else
 static void sighandler(int signum)
 {
+	(void)signum;
 	signal(SIGPIPE, SIG_IGN);
 	fprintf(stderr, "Signal caught, exiting!\n");
 	do_exit = 1;
@@ -118,15 +209,11 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 #endif
 	char *filename = NULL;
-	int n_read;
 	int r, opt;
-	int gain = 0;
-	int ppm_error = 0;
 	FILE *file;
 	uint8_t *buffer;
 	int dev_index = 0;
-	int dev_given = 0;
-	uint32_t frequency = 100000000;
+	int dev_given = 0; 
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 
@@ -136,26 +223,14 @@ int main(int argc, char **argv)
 			dev_index = verbose_device_search(optarg);
 			dev_given = 1;
 			break;
-		case 'f':
-			frequency = (uint32_t)atofs(optarg);
-			break;
-		case 'g':
-			gain = (int)(atof(optarg) * 10); /* tenths of a dB */
-			break;
 		case 's':
 			samp_rate = (uint32_t)atofs(optarg);
-			break;
-		case 'p':
-			ppm_error = atoi(optarg);
 			break;
 		case 'b':
 			out_block_size = (uint32_t)atof(optarg);
 			break;
 		case 'n':
 			bytes_to_read = (uint32_t)atof(optarg) * 2;
-			break;
-		case 'S':
-			sync_mode = 1;
 			break;
 		default:
 			usage();
@@ -209,20 +284,6 @@ int main(int argc, char **argv)
 	/* Set the sample rate */
 	verbose_set_sample_rate(dev, samp_rate);
 
-	/* Set the frequency */
-	verbose_set_frequency(dev, frequency);
-
-	if (0 == gain) {
-		 /* Enable automatic gain */
-		verbose_auto_gain(dev);
-	} else {
-		/* Enable manual gain */
-		gain = nearest_gain(dev, gain);
-		verbose_gain_set(dev, gain);
-	}
-
-	verbose_ppm_set(dev, ppm_error);
-
 	if(strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		file = stdout;
 #ifdef _WIN32
@@ -237,7 +298,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Reset endpoint before we start reading from it (mandatory) */
-	verbose_reset_buffer(dev);
+	//verbose_reset_buffer(dev);
 
 	
 	fprintf(stderr, "Reading samples in async mode...\n");

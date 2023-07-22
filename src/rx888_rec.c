@@ -40,20 +40,30 @@
 
 static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
-static rtlsdr_dev_t *dev = NULL;
+static rx888_dev_t *dev = NULL;
+
+int verbose_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
+{
+	int r;
+	r = rx888_set_sample_rate(dev, samp_rate);
+	if (r < 0) {
+		fprintf(stderr, "WARNING: Failed to set sample rate.\n");
+	} else {
+		fprintf(stderr, "Sampling at %u S/s.\n", samp_rate);
+	}
+	return r;
+}
 
 void usage(void)
 {
 	fprintf(stderr,
 		"rtl_sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
-		"Usage:\t -f frequency_to_tune_to [Hz]\n"
-		"\t[-s samplerate (default: 2048000 Hz)]\n"
+		"Usage:\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-p ppm_error (default: 0)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-n number of samples to read (default: 0, infinite)]\n"
-		"\t[-S force sync output (default: async)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
 	exit(1);
 }
@@ -76,11 +86,11 @@ static void sighandler(int signum)
 	signal(SIGPIPE, SIG_IGN);
 	fprintf(stderr, "Signal caught, exiting!\n");
 	do_exit = 1;
-	rtlsdr_cancel_async(dev);
+	rx888_cancel_async(dev);
 }
 #endif
 
-static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
+static void rx888_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
 	if (ctx) {
 		if (do_exit)
@@ -89,12 +99,12 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 		if ((bytes_to_read > 0) && (bytes_to_read < len)) {
 			len = bytes_to_read;
 			do_exit = 1;
-			rtlsdr_cancel_async(dev);
+			rx888_cancel_async(dev);
 		}
 
 		if (fwrite(buf, 1, len, (FILE*)ctx) != len) {
 			fprintf(stderr, "Short write, samples lost, exiting!\n");
-			rtlsdr_cancel_async(dev);
+			rx888_cancel_async(dev);
 		}
 
 		if (bytes_to_read > 0)
@@ -112,7 +122,6 @@ int main(int argc, char **argv)
 	int r, opt;
 	int gain = 0;
 	int ppm_error = 0;
-	int sync_mode = 0;
 	FILE *file;
 	uint8_t *buffer;
 	int dev_index = 0;
@@ -181,7 +190,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	r = rtlsdr_open(&dev, (uint32_t)dev_index);
+	r = rx888_open(&dev, (uint32_t)dev_index);
 	if (r < 0) {
 		fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
 		exit(1);
@@ -230,38 +239,11 @@ int main(int argc, char **argv)
 	/* Reset endpoint before we start reading from it (mandatory) */
 	verbose_reset_buffer(dev);
 
-	if (sync_mode) {
-		fprintf(stderr, "Reading samples in sync mode...\n");
-		while (!do_exit) {
-			r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
-			if (r < 0) {
-				fprintf(stderr, "WARNING: sync read failed.\n");
-				break;
-			}
-
-			if ((bytes_to_read > 0) && (bytes_to_read < (uint32_t)n_read)) {
-				n_read = bytes_to_read;
-				do_exit = 1;
-			}
-
-			if (fwrite(buffer, 1, n_read, file) != (size_t)n_read) {
-				fprintf(stderr, "Short write, samples lost, exiting!\n");
-				break;
-			}
-
-			if ((uint32_t)n_read < out_block_size) {
-				fprintf(stderr, "Short read, samples lost, exiting!\n");
-				break;
-			}
-
-			if (bytes_to_read > 0)
-				bytes_to_read -= n_read;
-		}
-	} else {
-		fprintf(stderr, "Reading samples in async mode...\n");
-		r = rtlsdr_read_async(dev, rtlsdr_callback, (void *)file,
+	
+	fprintf(stderr, "Reading samples in async mode...\n");
+	r = rx888_read_async(dev, rx888_callback, (void *)file,
 				      0, out_block_size);
-	}
+	
 
 	if (do_exit)
 		fprintf(stderr, "\nUser cancel, exiting...\n");
@@ -271,7 +253,7 @@ int main(int argc, char **argv)
 	if (file != stdout)
 		fclose(file);
 
-	rtlsdr_close(dev);
+	rx888_close(dev);
 	free (buffer);
 out:
 	return r >= 0 ? r : -r;

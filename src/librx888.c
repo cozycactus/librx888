@@ -436,6 +436,7 @@ int rx888_open(rx888_dev_t **out_dev, uint32_t index)
 
     dev->dev_lost = false;
 
+    dev->gpio_state = BIAS_HF;
     *out_dev = dev;
     rx888_send_command(dev->dev_handle, R820T2STDBY, 0);
     rx888_send_command(dev->dev_handle, STOPFX3, 0);

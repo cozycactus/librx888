@@ -168,11 +168,13 @@ int verbose_device_search(char *s)
 void usage(void)
 {
     fprintf(stderr,
-        "rx888_test, a benchmark tool for rx888 receiver\n\n"
+        "rx888_test, a benchmark tool and I/Q recorder for rx888 receiver\n\n"
         "Usage:\n"
         "\t[-s samplerate (default: 2048000 Hz)]\n"
         "\t[-d device_index (default: 0)]\n"
-        "\t[-b output_block_size (default: 16 * 16384)]\n");
+        "\t[-b output_block_size (default: 16 * 16384)]\n"
+        "\t[-n number of samples to read (default: 0, infinite)]\n"
+        "\tfilename (a '-' dumps samples to stdout)\n\n");
     exit(1);
 }
 

@@ -17,9 +17,14 @@ target_include_directories(rx888 PUBLIC
 # Build utility
 ########################################################################
 add_executable(rx888_test rx888_test.c)
-set(INSTALL_TARGETS rx888_test)
+add_executable(rx888_rec rx888_rec.c)
+set(INSTALL_TARGETS rx888_test rx888)
 
 target_link_libraries(rx888_test rx888
+    ${LIBUSB_LINK_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+target_link_libraries(rx888_rec rx888
     ${LIBUSB_LINK_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
@@ -38,6 +43,6 @@ endif()
 install(TARGETS rx888 
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so/.dylib file
   )
-install(TARGETS rx888_test
+install(TARGETS rx888_test rx888_rec
   DESTINATION ${CMAKE_INSTALL_BINDIR}
   )

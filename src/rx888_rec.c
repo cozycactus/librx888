@@ -40,7 +40,7 @@
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
 
 static int do_exit = 0;
-static uint32_t bytes_to_read = 0;
+static uint32_t samples_to_read = 0;
 static rx888_dev_t *dev = NULL;
 
 int verbose_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
@@ -184,25 +184,34 @@ static void sighandler(int signum)
 
 static void rx888_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
-	if (ctx) {
-		if (do_exit)
-			return;
+    if (ctx) {
+        if (do_exit)
+            return;
 
-		if ((bytes_to_read > 0) && (bytes_to_read < len)) {
-			len = bytes_to_read;
-			do_exit = 1;
-			rx888_cancel_async(dev);
-		}
+        int16_t* buf_int16 = (int16_t*)buf;
+        uint32_t len_int16 = len / sizeof(int16_t);
 
-		if (fwrite(buf, 1, len, (FILE*)ctx) != len) {
-			fprintf(stderr, "Short write, samples lost, exiting!\n");
-			rx888_cancel_async(dev);
-		}
+        if ((samples_to_read > 0) && (samples_to_read < len_int16)) {
+            len_int16 = samples_to_read;
+            do_exit = 1;
+            rx888_cancel_async(dev);
+        }
 
-		if (bytes_to_read > 0)
-			bytes_to_read -= len;
-	}
+        for (uint32_t i = 0; i < len_int16; ++i) {
+            // Convert the I component to a float and write it
+            float I = buf_int16[i] / 32768.0f;
+            fwrite(&I, sizeof(float), 1, (FILE*)ctx);
+
+            // Write the Q component as zero
+            float Q = 0.0f;
+            fwrite(&Q, sizeof(float), 1, (FILE*)ctx);
+        }
+
+        if (samples_to_read > 0)
+            samples_to_read -= len_int16;
+    }
 }
+
 
 int main(int argc, char **argv)
 {
@@ -231,7 +240,7 @@ int main(int argc, char **argv)
 			out_block_size = (uint32_t)atof(optarg);
 			break;
 		case 'n':
-			bytes_to_read = (uint32_t)atof(optarg) * 2;
+			samples_to_read = (uint32_t)atof(optarg) * 2;
 			break;
 		default:
 			usage();

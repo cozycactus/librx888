@@ -20,17 +20,22 @@ if(NOT CMAKE_BUILD_TYPE)
    message(STATUS "Build type not specified: defaulting to release.")
 endif(NOT CMAKE_BUILD_TYPE)
 
-set(CMAKE_C_FLAGS "-std=c11 -pedantic-errors -Wall -Wextra -Werror")
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
 include(GNUInstallDirs)
 include(GenerateExportHeader)
 include(CMakePackageConfigHelpers)
 
 # Set the version information here
-set(VERSION_INFO_MAJOR_VERSION 0) # increment major on api compatibility changes
-set(VERSION_INFO_MINOR_VERSION 6) # increment minor on feature-level changes
+set(VERSION_INFO_MAJOR_VERSION 1) # increment major on api compatibility changes
+set(VERSION_INFO_MINOR_VERSION 0) # increment minor on feature-level changes
 set(VERSION_INFO_PATCH_VERSION git) # increment patch for bug fixes and docs
+include(Version) # setup version info
 
+########################################################################
+# Find build dependencies
+########################################################################
+find_package(Threads)
 find_package(PkgConfig)
 
 if(PKG_CONFIG_FOUND)

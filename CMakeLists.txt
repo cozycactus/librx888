@@ -1,4 +1,11 @@
+# Set minimum required version for CMake
 cmake_minimum_required(VERSION 3.10)
+
+# Prevent in-source builds
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+  message(FATAL_ERROR "In-source builds are not allowed. Please create a separate\
+   build directory and run CMake from there.")
+endif()
 
 # workaround for https://gitlab.kitware.com/cmake/cmake/issues/16967
 if(${CMAKE_VERSION} VERSION_LESS "3.12.0")

@@ -36,6 +36,13 @@
 #include <libusb.h>
 #include "librx888.h"
 
+typedef struct rx888_variant_iface {
+    /* variant interface */
+    int (*set_hf_attenuation)(rx888_dev_t *dev, double rf_gain);
+    int (*set_sample_rate)(rx888_dev_t *dev, uint32_t samp_rate);
+    uint32_t (*get_sample_rate)(rx888_dev_t *dev);
+} rx888_variant_iface_t;
+
 enum rx888_async_status {
     RX888_INACTIVE = 0,
     RX888_CANCELING,

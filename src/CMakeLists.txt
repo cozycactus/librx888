@@ -16,17 +16,34 @@ target_include_directories(rx888 PUBLIC
   )
 
 ########################################################################
+# Setup libraries used in executables
+########################################################################
+add_library(convenience_static STATIC
+    convenience/convenience.c
+)
+target_include_directories(convenience_static
+  PRIVATE ${CMAKE_SOURCE_DIR}/include)
+if(WIN32)
+add_library(libgetopt_static STATIC
+    getopt/getopt.c
+)
+target_link_libraries(convenience_static
+    rtlsdr
+)
+endif()
+
+########################################################################
 # Build utility
 ########################################################################
 add_executable(rx888_test rx888_test.c)
 add_executable(rx888_rec rx888_rec.c)
 set(INSTALL_TARGETS rx888_test rx888)
 
-target_link_libraries(rx888_test rx888
+target_link_libraries(rx888_test rx888 convenience_static
     ${LIBUSB_LINK_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
-target_link_libraries(rx888_rec rx888
+target_link_libraries(rx888_rec rx888 convenience_static
     ${LIBUSB_LINK_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )

@@ -33,6 +33,8 @@
 #endif
 
 #include "librx888.h"
+#include "convenience/convenience.h"
+
 
 #define DEFAULT_SAMPLE_RATE		2048000
 #define DEFAULT_BUF_LENGTH		(16 * 16384)
@@ -42,108 +44,6 @@
 static int do_exit = 0;
 static uint32_t samples_to_read = 0;
 static rx888_dev_t *dev = NULL;
-
-int verbose_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
-{
-	int r;
-	r = rx888_set_sample_rate(dev, samp_rate);
-	if (r < 0) {
-		fprintf(stderr, "WARNING: Failed to set sample rate.\n");
-	} else {
-		fprintf(stderr, "Sampling at %u S/s.\n", samp_rate);
-	}
-	return r;
-}
-
-
-int verbose_device_search(char *s)
-{
-	int i, device_count, device, offset;
-	char *s2;
-	char vendor[256], product[256], serial[256];
-	device_count = rx888_get_device_count();
-	if (!device_count) {
-		fprintf(stderr, "No supported devices found.\n");
-		return -1;
-	}
-	fprintf(stderr, "Found %d device(s):\n", device_count);
-	for (i = 0; i < device_count; i++) {
-		rx888_get_device_usb_strings(i, vendor, product, serial);
-		fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
-	}
-	fprintf(stderr, "\n");
-	/* does string look like raw id number */
-	device = (int)strtol(s, &s2, 0);
-	if (s2[0] == '\0' && device >= 0 && device < device_count) {
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rx888_get_device_name((uint32_t)device));
-		return device;
-	}
-	/* does string exact match a serial */
-	for (i = 0; i < device_count; i++) {
-		rx888_get_device_usb_strings(i, vendor, product, serial);
-		if (strcmp(s, serial) != 0) {
-			continue;}
-		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rx888_get_device_name((uint32_t)device));
-		return device;
-	}
-	/* does string prefix match a serial */
-	for (i = 0; i < device_count; i++) {
-		rx888_get_device_usb_strings(i, vendor, product, serial);
-		if (strncmp(s, serial, strlen(s)) != 0) {
-			continue;}
-		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rx888_get_device_name((uint32_t)device));
-		return device;
-	}
-	/* does string suffix match a serial */
-	for (i = 0; i < device_count; i++) {
-		rx888_get_device_usb_strings(i, vendor, product, serial);
-		offset = strlen(serial) - strlen(s);
-		if (offset < 0) {
-			continue;}
-		if (strncmp(s, serial+offset, strlen(s)) != 0) {
-			continue;}
-		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rx888_get_device_name((uint32_t)device));
-		return device;
-	}
-	fprintf(stderr, "No matching devices found.\n");
-	return -1;
-}
-
-double atofs(char *s)
-/* standard suffixes */
-{
-	char last;
-	int len;
-	double suff = 1.0;
-	len = strlen(s);
-	last = s[len-1];
-	s[len-1] = '\0';
-	switch (last) {
-		case 'g':
-		case 'G':
-			suff *= 1e3;
-			/* fall-through */
-		case 'm':
-		case 'M':
-			suff *= 1e3;
-			/* fall-through */
-		case 'k':
-		case 'K':
-			suff *= 1e3;
-			suff *= atof(s);
-			s[len-1] = last;
-			return suff;
-	}
-	s[len-1] = last;
-	return atof(s);
-}
 
 void usage(void)
 {
@@ -277,7 +177,7 @@ int main(int argc, char **argv)
 
 	r = rx888_open(&dev, (uint32_t)dev_index);
 	if (r < 0) {
-		fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
+		fprintf(stderr, "Failed to open rx888 device #%d.\n", dev_index);
 		exit(1);
 	}
 #ifndef _WIN32

@@ -47,6 +47,7 @@
 #endif
 
 #include "librx888.h"
+#include "convenience/convenience.h"
 
 #define DEFAULT_SAMPLE_RATE		64000000
 #define DEFAULT_BUF_LENGTH      (1024 * 16 * 8)
@@ -91,79 +92,6 @@ static uint32_t total_samples = 0;
 static uint32_t dropped_samples = 0;
 
 static unsigned int ppm_duration = PPM_DURATION;
-
-int verbose_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
-{
-    int r;
-    r = rx888_set_sample_rate(dev, samp_rate);
-    if (r < 0) {
-        fprintf(stderr, "WARNING: Failed to set sample rate.\n");
-    } else {
-        fprintf(stderr, "Sampling at %u S/s.\n", samp_rate);
-    }
-    return r;
-}
-
-
-int verbose_device_search(char *s)
-{
-    int i, device_count, device, offset;
-    char *s2;
-    char vendor[256], product[256], serial[256];
-    device_count = rx888_get_device_count();
-    if (!device_count) {
-        fprintf(stderr, "No supported devices found.\n");
-        return -1;
-    }
-    fprintf(stderr, "Found %d device(s):\n", device_count);
-    for (i = 0; i < device_count; i++) {
-        rx888_get_device_usb_strings(i, vendor, product, serial);
-        fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
-    }
-    fprintf(stderr, "\n");
-    /* does string look like raw id number */
-    device = (int)strtol(s, &s2, 0);
-    if (s2[0] == '\0' && device >= 0 && device < device_count) {
-        fprintf(stderr, "Using device %d: %s\n",
-            device, rx888_get_device_name((uint32_t)device));
-        return device;
-    }
-    /* does string exact match a serial */
-    for (i = 0; i < device_count; i++) {
-        rx888_get_device_usb_strings(i, vendor, product, serial);
-        if (strcmp(s, serial) != 0) {
-            continue;}
-        device = i;
-        fprintf(stderr, "Using device %d: %s\n",
-            device, rx888_get_device_name((uint32_t)device));
-        return device;
-    }
-    /* does string prefix match a serial */
-    for (i = 0; i < device_count; i++) {
-        rx888_get_device_usb_strings(i, vendor, product, serial);
-        if (strncmp(s, serial, strlen(s)) != 0) {
-            continue;}
-        device = i;
-        fprintf(stderr, "Using device %d: %s\n",
-            device, rx888_get_device_name((uint32_t)device));
-        return device;
-    }
-    /* does string suffix match a serial */
-    for (i = 0; i < device_count; i++) {
-        rx888_get_device_usb_strings(i, vendor, product, serial);
-        offset = strlen(serial) - strlen(s);
-        if (offset < 0) {
-            continue;}
-        if (strncmp(s, serial+offset, strlen(s)) != 0) {
-            continue;}
-        device = i;
-        fprintf(stderr, "Using device %d: %s\n",
-            device, rx888_get_device_name((uint32_t)device));
-        return device;
-    }
-    fprintf(stderr, "No matching devices found.\n");
-    return -1;
-}
 
 void usage(void)
 {

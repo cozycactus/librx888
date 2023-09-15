@@ -101,11 +101,11 @@ jobs:
                 install: >-
                   git
                   make
-                  libusb
                 pacboy: >-
                   toolchain:p
                   cmake:p
                   ninja:p
+                  libusb:p
 
           
             - name: '🚧 Build TOOL'

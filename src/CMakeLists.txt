@@ -28,7 +28,7 @@ add_library(libgetopt_static STATIC
     getopt/getopt.c
 )
 target_link_libraries(convenience_static
-    rtlsdr
+    rx888
 )
 endif()
 

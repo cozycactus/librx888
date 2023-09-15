@@ -105,6 +105,9 @@ jobs:
                   toolchain:p
                   cmake:p
                   ninja:p
+
+            - name: '📦 Install libusb'
+              run: pacman -S --noconfirm libusb
         
             - name: '🚧 Build TOOL'
               run: |

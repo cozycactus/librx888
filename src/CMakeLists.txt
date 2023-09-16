@@ -1,5 +1,5 @@
 
-add_library(rx888 SHARED librx888.c)
+add_library(rx888 SHARED librx888.c rx888_variant.c)
 add_library(librx888::rx888 ALIAS rx888)
 
 target_compile_options(rx888 PRIVATE -fPIC)

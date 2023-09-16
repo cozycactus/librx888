@@ -21,6 +21,9 @@
  */
 
 
+#include "rx888_variant.h"
+#include "rx888mk2_variant.h"
+#include <sys/_types/_null.h>
 #define _POSIX_C_SOURCE 199309L
 #include <errno.h>
 #include <stdint.h>
@@ -34,70 +37,38 @@
 #include <stdbool.h>
 
 #include <libusb.h>
+
+/*
+ * All libusb callback functions should be marked with the LIBUSB_CALL macro
+ * to ensure that they are compiled with the same calling convention as libusb.
+ *
+ * If the macro isn't available in older libusb versions, we simply define it.
+ */
+#ifndef LIBUSB_CALL
+#define LIBUSB_CALL
+#endif
+
 #include "librx888.h"
-
-typedef struct rx888_variant_iface {
-    /* variant interface */
-    int (*set_hf_attenuation)(rx888_dev_t *dev, double rf_gain);
-    int (*set_sample_rate)(rx888_dev_t *dev, uint32_t samp_rate);
-    uint32_t (*get_sample_rate)(rx888_dev_t *dev);
-} rx888_variant_iface_t;
-
-enum rx888_async_status {
-    RX888_INACTIVE = 0,
-    RX888_CANCELING,
-    RX888_RUNNING
-};
-
-enum rx888_command {
-    STARTFX3 = 0xAA,
-    STARTADC = 0xB2,
-    STOPFX3 = 0xAB,
-    R820T2STDBY = 0xB8,
-    GPIOFX3 = 0xAD
-};
-
-// Bitmasks for GPIO pins
-enum GPIOPin {
-    ATT_LE = 1U << 0,
-    ATT_CLK = 1U << 1,
-    ATT_DATA = 1U << 2,
-    SEL0 = 1U << 3,
-    SEL1 = 1U << 4,
-    SHDWN = 1U << 5,
-    DITH = 1U << 6,
-    RAND = 1U << 7,
-    BIAS_HF = 1U << 8,
-    BIAS_VHF = 1U << 9,
-    LED_YELLOW = 1U << 10,
-    LED_RED = 1U << 11,
-    LED_BLUE = 1U << 12,
-    ATT_SEL0 = 1U << 13,
-    ATT_SEL1 = 1U << 14,
-    
-    // RX888r2
-    VHF_EN = 1U << 15,
-    PGA_EN = 1U << 16,
-};
+#include "rx888.h"
 
 
-struct rx888_dev {
-    libusb_context *ctx;
-    struct libusb_device_handle *dev_handle;
-    uint32_t xfer_buf_num;
-    uint32_t xfer_buf_len;
-    struct libusb_transfer **xfer;
-    unsigned char **xfer_buf;
-    rx888_read_async_cb_t cb;
-    void *cb_ctx;
-    enum rx888_async_status async_status;
-    int async_cancel;
-    uint32_t sample_rate;
-    /* status */
-    int dev_lost;
-    int driver_active;
-    unsigned int xfer_errors;
-    uint32_t gpio_state;
+
+
+/* definition order must match enum rx888_variant */
+static rx888_variant_iface_t rx888_variant_iface[] = {
+    {
+        NULL,NULL,NULL
+    },
+    {
+        rx888_init,
+        rx888_exit,
+        rx888_set_hf_attenuation
+    },
+    {
+        rx888mk2_init,
+        rx888mk2_exit,
+        rx888mk2_set_hf_attenuation
+    }
 };
 
 typedef struct rx888 {
@@ -115,7 +86,7 @@ static rx888_t known_devices[] = {
 #define DEFAULT_BUF_LENGTH  (1024 * 16 * 8)
 #define CTRL_TIMEOUT 0
 
-static int rx888_send_command(struct libusb_device_handle *dev_handle,
+int rx888_send_command(struct libusb_device_handle *dev_handle,
                                  enum rx888_command cmd,uint32_t data)
 {
   /* Send the control message. */
@@ -130,34 +101,6 @@ static int rx888_send_command(struct libusb_device_handle *dev_handle,
   }
 
   return 0;
-}
-
-int rx888_set_hf_attenuation(rx888_dev_t *dev, double rf_gain)
-{
-    if (!dev)
-        return -1;
-
-    // Verify that rf_gain is one of the expected values
-    if (rf_gain != 0.0 && rf_gain != -10.0 && rf_gain != -20.0)
-        return -1;
-
-    // Set the HF attenuation
-    if (rf_gain == 0.0) {
-        dev->gpio_state &= ~ATT_SEL0; // Clear the bit 13
-        dev->gpio_state |= ATT_SEL1; // Set the bit 14
-        } 
-    else if (rf_gain == -10.0) {
-        dev->gpio_state |= ATT_SEL0; // Set the bit 13
-        dev->gpio_state |= ATT_SEL1; // Set the bit 14
-        }
-    else if (rf_gain == -20.0) {
-        dev->gpio_state |= ATT_SEL0; // Set the bit 13
-        dev->gpio_state &= ~ATT_SEL1; // Clear the bit 14
-        }
-
-    rx888_send_command(dev->dev_handle, GPIOFX3, dev->gpio_state);
-
-    return 0;
 }
 
 int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)

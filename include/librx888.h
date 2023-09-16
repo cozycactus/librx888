@@ -101,7 +101,7 @@ enum rx888_variant {
     RX888_VARIANT_RX888MK2
 };
 
-int rx888_set_hf_attenuation(rx888_dev_t *dev, double rf_gain);
+int rx888_set_hf_attenuation(void *dev, double rf_gain);
 
 /*!
  * Set the sample rate for the device.

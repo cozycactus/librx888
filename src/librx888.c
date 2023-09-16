@@ -21,9 +21,7 @@
  */
 
 
-#include "rx888_variant.h"
-#include "rx888mk2_variant.h"
-#include <sys/_types/_null.h>
+
 #define _POSIX_C_SOURCE 199309L
 #include <errno.h>
 #include <stdint.h>
@@ -38,6 +36,8 @@
 
 #include <libusb.h>
 
+#include "rx888mk2_variant.h"
+#include "rx888_variant.h"
 /*
  * All libusb callback functions should be marked with the LIBUSB_CALL macro
  * to ensure that they are compiled with the same calling convention as libusb.

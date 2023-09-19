@@ -79,6 +79,7 @@ typedef struct rx888 {
 
 static rx888_t known_devices[] = {
     { 0x04b4, 0x00f1, "Cypress Semiconductor Corp. RX888"},
+    { 0x04b4, 0x00f3, "Cypress Semiconductor WestBridge"}
 
 };
 
@@ -347,6 +348,18 @@ int rx888_open(rx888_dev_t **out_dev, uint32_t index)
         goto err;
     }
 
+    if (dev_desc.idVendor == 0x04b4 && dev_desc.idProduct == 0x00f1) {
+        goto open;
+    } else if (dev_desc.idVendor == 0x04b4 && dev_desc.idProduct == 0x00f3) {
+        fprintf(stderr, "No firmware found!\n");
+        r = -1;
+        goto err;
+    } else {
+        fprintf(stderr, "Unknown device\n");
+        r = -1;
+        goto err;
+    }
+open:
     r = libusb_open(device, &dev->dev_handle);
     if (r < 0) {
         libusb_free_device_list(list, 1);

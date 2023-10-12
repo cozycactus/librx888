@@ -454,15 +454,6 @@ int rx888_close(rx888_dev_t *dev)
     return 0;
 }
 
-int rx888_read_sync(rx888_dev_t *dev, void *buf, int len, int *n_read)
-{
-    if (!dev)
-        return -1;
-
-    return libusb_bulk_transfer(dev->dev_handle, 0x81,
-             buf, len, n_read, 0);
-}
-
 static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
 {
     rx888_dev_t *dev = (rx888_dev_t *)xfer->user_data;

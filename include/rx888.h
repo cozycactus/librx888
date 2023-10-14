@@ -63,6 +63,7 @@ struct rx888_dev {
     int async_cancel;
     uint32_t sample_rate;
     /* variant context */
+    enum rx888_variant variant_type;
     rx888_variant_iface_t *variant;
     /* status */
     int dev_lost;

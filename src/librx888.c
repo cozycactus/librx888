@@ -104,6 +104,34 @@ int rx888_send_command(struct libusb_device_handle *dev_handle,
   return 0;
 }
 
+int rx888_receive_response(struct libusb_device_handle *dev_handle,
+                           enum rx888_command cmd, uint32_t *data)
+{
+    /* Send the control message to receive data. */
+    int ret = libusb_control_transfer(
+        dev_handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_IN, cmd, 0, 0,
+        (unsigned char *)data, sizeof(*data), CTRL_TIMEOUT);
+
+    if (ret < 0) 
+    {
+        fprintf(stderr, "Could not receive response for command: 0x%X. Error : %s.\n",
+                cmd, libusb_error_name(ret));
+        return -1;
+    }
+
+    //int d = (unsigned char)data[0];
+
+    return 0;
+}
+
+enum rx888_variant rx888_get_variant_type(rx888_dev_t *dev)
+{
+    uint32_t *data;
+    rx888_receive_response(dev->dev_handle, TESTFX3, data);
+    dev->variant_type = (unsigned char)data[0];
+    return dev->variant_type;
+}
+
 int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t samp_rate)
 {
     if (!dev)
@@ -392,6 +420,15 @@ int rx888_open(rx888_dev_t **out_dev, uint32_t index)
     }
 
     dev->dev_lost = false;
+
+    /* Probe for the variant */
+    
+    dev->variant_type = rx888_get_variant_type(dev);
+
+    if (dev->variant_type == RX888_VARIANT_RX888) {
+        fprintf(stderr, "Found RX888\n");
+        dev->variant_type = RX888_VARIANT_RX888;
+    }
 
     dev->gpio_state = BIAS_HF;
     *out_dev = dev;

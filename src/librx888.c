@@ -124,11 +124,16 @@ int rx888_receive_response(struct libusb_device_handle *dev_handle,
     return 0;
 }
 
-enum rx888_variant rx888_get_variant_type(rx888_dev_t *dev)
+int rx888_get_variant_info(rx888_dev_t *dev)
 {
-    uint32_t *data;
-    rx888_receive_response(dev->dev_handle, TESTFX3, data);
-    dev->variant_type = (unsigned char)data[0];
+     uint32_t data;
+    if (rx888_receive_response(dev->dev_handle, TESTFX3, &data) != 0) 
+    {
+        fprintf(stderr, "Error receiving response.\n");
+        return -1;
+    }
+
+    dev->variant_type = (unsigned char)data;
     return dev->variant_type;
 }
 
@@ -423,7 +428,7 @@ int rx888_open(rx888_dev_t **out_dev, uint32_t index)
 
     /* Probe for the variant */
     
-    dev->variant_type = rx888_get_variant_type(dev);
+    r = rx888_get_variant_info(dev);
 
     if (dev->variant_type == RX888_VARIANT_RX888) {
         fprintf(stderr, "Found RX888\n");

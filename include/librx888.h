@@ -96,9 +96,14 @@ enum rx888_device {
 };
 
 enum rx888_variant {
-    RX888_VARIANT_UNKNOWN = 0,
+    RX888_VARIANT_UNKNOWN = 0x00,
+    RX888_VARIANT_BBRF103 = 0x01,
+    RX888_VARIANT_HF103 = 0x02,
     RX888_VARIANT_RX888 = 0x03,
     RX888_VARIANT_RX888MK2 = 0x04,
+    RX888_VARIANT_RX999 = 0x05,
+    RX888_VARIANT_RXLUCY = 0x06,
+    RX888_VARIANT_RX888MK3 = 0x07,
 };
 
 int rx888_set_hf_attenuation(void *dev, double rf_gain);

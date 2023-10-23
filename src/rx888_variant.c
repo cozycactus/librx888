@@ -2,8 +2,19 @@
 #include "librx888.h"
 #include "rx888.h"
 
+int rx888_init(void *dev)
+{
+    rx888_dev_t* dev_v = (rx888_dev_t *)dev;
+    rx888_send_command(dev_v->dev_handle, STOPFX3, 0);
+    rx888_send_command(dev_v->dev_handle, STARTADC, dev_v->sample_rate);
+    rx888_send_command(dev_v->dev_handle, STARTFX3, 0);
+    return 0;
+}
 
-
+int rx888_exit(void *dev)
+{
+    return 0;
+}
 
 int rx888_set_hf_attenuation(void *dev, double rf_gain)
 {

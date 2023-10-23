@@ -38,6 +38,9 @@
 
 #include "rx888mk2_variant.h"
 #include "rx888_variant.h"
+#include "bbrf103_variant.h"
+#include "hf103_variant.h"
+
 /*
  * All libusb callback functions should be marked with the LIBUSB_CALL macro
  * to ensure that they are compiled with the same calling convention as libusb.
@@ -58,6 +61,16 @@
 static rx888_variant_iface_t rx888_variant_iface[] = {
     {
         NULL,NULL,NULL
+    },
+    {
+        bbrf103_init,
+        bbrf103_exit,
+        bbrf103_set_hf_attenuation
+    },
+    {
+        hf103_init,
+        hf103_exit,
+        hf103_set_hf_attenuation
     },
     {
         rx888_init,
@@ -429,18 +442,34 @@ int rx888_open(rx888_dev_t **out_dev, uint32_t index)
     /* Probe for the variant */
     
     r = rx888_get_variant_info(dev);
+    if (r < 0) {
+        fprintf(stderr, "Error probing device: %d\n", r);
+        goto err;
+    }
+
+    if (dev->variant_type == RX888_VARIANT_RX888MK2) {
+        fprintf(stderr, "Found RX888MK2\n");
+        dev->variant_type = RX888_VARIANT_RX888MK2;
+        goto found;
+    }
 
     if (dev->variant_type == RX888_VARIANT_RX888) {
         fprintf(stderr, "Found RX888\n");
         dev->variant_type = RX888_VARIANT_RX888;
+        goto found;
     }
-
-    dev->gpio_state = BIAS_HF;
+found:
+    dev->variant = &rx888_variant_iface[dev->variant_type];
+    if (dev->variant->init(dev) < 0) {
+        fprintf(stderr, "Error initializing the device.\n");
+        goto err;
+    }
+    //dev->gpio_state = BIAS_HF;
     *out_dev = dev;
-    rx888_send_command(dev->dev_handle, R820T2STDBY, 0);
+   /*  rx888_send_command(dev->dev_handle, R820T2STDBY, 0);
     rx888_send_command(dev->dev_handle, STOPFX3, 0);
     rx888_send_command(dev->dev_handle, STARTADC, dev->sample_rate);
-    rx888_send_command(dev->dev_handle, STARTFX3, 0);
+    rx888_send_command(dev->dev_handle, STARTFX3, 0); */
     return 0;
 err:
     if (dev) {

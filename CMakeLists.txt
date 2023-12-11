@@ -93,6 +93,18 @@ CONFIGURE_FILE(
     ${CMAKE_CURRENT_BINARY_DIR}/librx888.pc
 @ONLY)
 
+# use, i.e. don't skip the full RPATH for the build tree
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+ 
+# when building, don't use the install RPATH already
+# (but later on when installing)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+ 
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 INSTALL(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/librx888.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig

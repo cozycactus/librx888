@@ -43,7 +43,7 @@
 #include <unistd.h>
 #else
 #include <windows.h>
-#include "getopt.h"
+#include "getopt/getopt.h"
 #endif
 
 #include "librx888.h"

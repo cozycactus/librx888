@@ -74,10 +74,10 @@ else()
 endif()
 
 if(PKG_CONFIG_FOUND AND NOT LIBUSB_FOUND)
-    message(FATAL_ERROR "LibUSB 1.0 required to compile librx888")
+    message(FATAL_ERROR "LibUSB 1.0 required to compile rx888")
 endif()
 if(NOT THREADS_FOUND)
-    message(FATAL_ERROR "pthreads(-win32) required to compile librx888")
+    message(FATAL_ERROR "pthreads(-win32) required to compile rx888")
 endif()
 
 ########################################################################
@@ -104,8 +104,6 @@ install(FILES
 ########################################################################
 # Add subdirectories
 ########################################################################
-
-add_subdirectory(include)
 add_subdirectory(src)
 
 ########################################################################

@@ -3,15 +3,7 @@
 ########################################################################
 add_library(rx888 SHARED librx888.c rx888_variant.c bbrf103_variant.c
                           hf103_variant.c rx888mk2_variant.c)
-
-#add_library(librx888::rx888 ALIAS rx888)
-
-#target_compile_options(rx888 PRIVATE -fPIC)
-
 target_link_libraries(rx888 ${LIBUSB_LIBRARIES} ${THREADS_PTHREADS_LIBRARY}) 
-
-#target_link_libraries(rx888 PkgConfig::LIBUSB)
-
 target_include_directories(rx888 PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>  # <prefix>/include
@@ -67,13 +59,13 @@ endif()
 ########################################################################
 add_executable(rx888_test rx888_test.c)
 add_executable(rx888_rec rx888_rec.c)
-set(INSTALL_TARGETS rx888_test rx888_rec rx888_static)
+set(INSTALL_TARGETS rx888 rx888_static rx888_test rx888_rec )
 
-target_link_libraries(rx888_test rx888_static convenience_static
+target_link_libraries(rx888_test rx888 convenience_static
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
-target_link_libraries(rx888_rec rx888_static convenience_static
+target_link_libraries(rx888_rec rx888 convenience_static
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
@@ -89,8 +81,11 @@ endif()
 ########################################################################
 # Install built library files & utilities
 ########################################################################
-install(TARGETS rx888 
+install(TARGETS rx888 EXPORT RX888-export 
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so/.dylib file
+  )
+install(TARGETS rx888_static EXPORT RX888-export
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so/.dylib file
   )
 install(TARGETS rx888_test rx888_rec
   DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -142,3 +142,36 @@ INSTALL(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 
+########################################################################
+# Create CMake Config File
+########################################################################
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/rx888/rx888ConfigVersion.cmake"
+  VERSION ${VERSION}
+  COMPATIBILITY AnyNewerVersion
+  )
+
+configure_file(cmake/rx888Config.cmake
+  "${CMAKE_CURRENT_BINARY_DIR}/rx888/rx888Config.cmake"
+  COPYONLY
+  )
+
+set(ConfigPackageLocation lib/cmake/rx888)
+install(EXPORT RX888-export
+  FILE rx888Targets.cmake
+  NAMESPACE rx888::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rx888/
+  )
+install(
+  FILES
+  cmake/rx888Config.cmake
+  "${CMAKE_CURRENT_BINARY_DIR}/rx888/rx888ConfigVersion.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rx888/
+  COMPONENT Devel
+  )
+
+########################################################################
+# Print Summary
+########################################################################
+MESSAGE(STATUS "Building for version: ${VERSION} / ${LIBVER}")
+MESSAGE(STATUS "Using install prefix: ${CMAKE_INSTALL_PREFIX}")

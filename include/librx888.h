@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <rx888_export.h>
 
 typedef struct rx888_dev rx888_dev_t;
 
@@ -36,7 +37,7 @@ typedef struct rx888_dev rx888_dev_t;
  *
  * \return the number of available devices
  */
-uint32_t rx888_get_device_count(void);
+RX888_API uint32_t rx888_get_device_count(void);
 
 /*!
  * Get the name of a device.
@@ -44,7 +45,7 @@ uint32_t rx888_get_device_count(void);
  * \param index the device index
  * \return the device name
  */
-const char* rx888_get_device_name(uint32_t index);
+RX888_API const char* rx888_get_device_name(uint32_t index);
 
 /*!
  * Get USB device strings.
@@ -57,7 +58,7 @@ const char* rx888_get_device_name(uint32_t index);
  * \param serial serial number, may be NULL
  * \return 0 on success
  */
-int rx888_get_device_usb_strings(uint32_t index,
+RX888_API int rx888_get_device_usb_strings(uint32_t index,
                          char *manufact,
                          char *product,
                          char *serial);
@@ -72,7 +73,7 @@ int rx888_get_device_usb_strings(uint32_t index,
  * \return -2 if no devices were found at all
  * \return -3 if devices were found, but none with matching name
  */
-int rx888_get_index_by_serial(const char *serial);
+RX888_API int rx888_get_index_by_serial(const char *serial);
 
 /*!
  * Open a device by index.
@@ -81,7 +82,7 @@ int rx888_get_index_by_serial(const char *serial);
  * \param index the device index
  * \return 0 on success
  */
-int rx888_open(rx888_dev_t **dev, uint32_t index);
+RX888_API int rx888_open(rx888_dev_t **dev, uint32_t index);
 
 /*!
  * Close a device.
@@ -89,7 +90,7 @@ int rx888_open(rx888_dev_t **dev, uint32_t index);
  * \param dev the device handle given by rx888_open()
  * \return 0 on success
  */
-int rx888_close(rx888_dev_t *dev);
+RX888_API int rx888_close(rx888_dev_t *dev);
 
 enum rx888_device {
     RX888_DEVICE = 0
@@ -106,7 +107,7 @@ enum rx888_variant {
     RX888_VARIANT_RX888MK3 = 0x07,
 };
 
-int rx888_set_hf_attenuation(void *dev, double rf_gain);
+RX888_API int rx888_set_hf_attenuation(void *dev, double rf_gain);
 
 /*!
  * Set the sample rate for the device.
@@ -117,7 +118,7 @@ int rx888_set_hf_attenuation(void *dev, double rf_gain);
  * 		    sample loss is to be expected for rates > 150000000
  * \return 0 on success, -EINVAL on invalid rate
  */
-int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t rate);
+RX888_API int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t rate);
 
 /*!
  * Get actual sample rate the device is configured to.
@@ -125,7 +126,7 @@ int rx888_set_sample_rate(rx888_dev_t *dev, uint32_t rate);
  * \param dev the device handle given by rx888_open()
  * \return 0 on error, sample rate in Hz otherwise
  */
-uint32_t rx888_get_sample_rate(rx888_dev_t *dev);
+RX888_API uint32_t rx888_get_sample_rate(rx888_dev_t *dev);
 
 typedef void(*rx888_read_async_cb_t)(unsigned char *buf, uint32_t len, void *ctx);
 
@@ -143,7 +144,7 @@ typedef void(*rx888_read_async_cb_t)(unsigned char *buf, uint32_t len, void *ctx
  *		  for default buffer length (16 * 32 * 512)
  * \return 0 on success
  */
-int rx888_read_async(rx888_dev_t *dev,
+RX888_API int rx888_read_async(rx888_dev_t *dev,
                  rx888_read_async_cb_t cb,
                  void *ctx,
                  uint32_t buf_num,
@@ -155,7 +156,7 @@ int rx888_read_async(rx888_dev_t *dev,
  * \param dev the device handle given by rx888_open()
  * \return 0 on success
  */
-int rx888_cancel_async(rx888_dev_t *dev);
+RX888_API int rx888_cancel_async(rx888_dev_t *dev);
 
 #ifdef __cplusplus
 }

@@ -97,7 +97,7 @@ add_custom_target(uninstall
 ########################################################################
 install(FILES
     include/librx888.h
-    
+    include/rx888_export.h
     DESTINATION include
 )
 
